@@ -42,8 +42,19 @@ const uploadViolation = async (req, res) => {
         vehicleNumber = aiVehicleNumber || 'Unknown';
     }
 
+    // Normalize vehicle number for consistent matching (remove spaces/dashes)
+    const normalizedNumber = vehicleNumber.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+
     // 3. Find or create vehicle and owner
-    let vehicle = await Vehicle.findOne({ vehicleNumber });
+    // Search using a regex or by normalizing all numbers in DB (better to normalize input)
+    // For now, let's try to match exactly or by normalized regex
+    let vehicle = await Vehicle.findOne({ 
+        $or: [
+            { vehicleNumber: vehicleNumber },
+            { vehicleNumber: normalizedNumber },
+            { vehicleNumber: new RegExp('^' + normalizedNumber.split('').join('\\s*') + '$', 'i') }
+        ]
+    });
     let owner;
 
     if (!vehicle) {
@@ -139,14 +150,21 @@ const getViolations = async (req, res) => {
           .sort({ createdAt: -1 })
           .limit(100);
         
-        // Fetch fine for each violation
+        // Fetch fine and evidence for each violation
         const results = await Promise.all(violations.map(async (v) => {
             const fine = await Fine.findOne({ violationId: v._id });
-            return { ...v._doc, fine };
+            const evidence = await Evidence.findOne({ violationId: v._id });
+            return { 
+                ...v._doc, 
+                fine, 
+                imageUrl: evidence ? evidence.imageUrl : null,
+                evidenceUrl: evidence ? evidence.imageUrl : null // Frontend uses both
+            };
         }));
 
         res.json(results);
     } catch (error) {
+        console.error('getViolations Error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -161,14 +179,21 @@ const getMyViolations = async (req, res) => {
             .populate('ruleId')
             .sort({ createdAt: -1 });
         
-        // Fetch fine for each violation
+        // Fetch fine and evidence for each violation
         const results = await Promise.all(violations.map(async (v) => {
             const fine = await Fine.findOne({ violationId: v._id });
-            return { ...v._doc, fine };
+            const evidence = await Evidence.findOne({ violationId: v._id });
+            return { 
+                ...v._doc, 
+                fine, 
+                imageUrl: evidence ? evidence.imageUrl : null,
+                evidenceUrl: evidence ? evidence.imageUrl : null
+            };
         }));
 
         res.json(results);
     } catch (error) {
+        console.error('getMyViolations Error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

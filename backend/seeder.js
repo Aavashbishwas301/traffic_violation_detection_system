@@ -103,6 +103,24 @@ const seedData = async () => {
         fineAmount: 1500
     });
 
+    const rule4 = await Rule.create({
+        violationType: 'Zebra Crossing',
+        description: 'Stopping or driving over a designated pedestrian zebra crossing.',
+        fineAmount: 500
+    });
+
+    const rule5 = await Rule.create({
+        violationType: 'Wrong Way',
+        description: 'Driving in the opposite direction of traffic flow.',
+        fineAmount: 2000
+    });
+
+    const rule6 = await Rule.create({
+        violationType: 'Sidewalk Encroachment',
+        description: 'Driving or parking on the sidewalk meant for pedestrians.',
+        fineAmount: 1000
+    });
+
     // 6. Create Vehicles
     const vehicle1 = await Vehicle.create({
       ownerId: owner1._id,
