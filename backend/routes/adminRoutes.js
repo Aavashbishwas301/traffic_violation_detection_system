@@ -9,7 +9,12 @@ import {
   updateRule,
   generateGlobalReport,
   broadcastMessage,
-  getNotifications
+  getNotifications,
+  getComplaints,
+  respondToComplaint,
+  getDetailedReports,
+  updateOfficer,
+  createComplaint
 } from '../controllers/adminController.js';
 import { updateViolation } from '../controllers/violationController.js';
 import { protect, admin, police } from '../middleware/authMiddleware.js';
@@ -26,9 +31,21 @@ router.route('/vehicles').get(protect, admin, getVehicles);
 router.route('/vehicles/:id').delete(protect, admin, deleteVehicle);
 
 // Rules and Reports
-router.route('/rules').get(protect, admin, getRules).post(protect, admin, updateRule);
+router.get('/rules', protect, police, getRules);
+router.post('/rules', protect, admin, updateRule);
 router.get('/report', protect, admin, generateGlobalReport);
 router.post('/broadcast', protect, admin, broadcastMessage);
 router.get('/notifications', protect, getNotifications);
+
+// Complaints Management
+router.get('/complaints', protect, admin, getComplaints);
+router.post('/complaints', protect, createComplaint); // Owners can create
+router.put('/complaints/:id', protect, admin, respondToComplaint);
+
+// Officer Management
+router.put('/officers/:id', protect, admin, updateOfficer);
+
+// Detailed Reports
+router.get('/reports/:period', protect, admin, getDetailedReports);
 
 export default router;

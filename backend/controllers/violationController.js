@@ -138,6 +138,76 @@ const uploadViolation = async (req, res) => {
   }
 };
 
+// @desc    Manual violation entry
+// @route   POST /api/violations/manual
+// @access  Private (Police/Admin)
+const manualViolation = async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: 'Evidence required' });
+    const { vehicleNumber, violationType, location, remarks } = req.body;
+    
+    try {
+        const normalizedNumber = vehicleNumber.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        let vehicle = await Vehicle.findOne({ 
+            $or: [
+                { vehicleNumber: vehicleNumber },
+                { vehicleNumber: normalizedNumber }
+            ]
+        });
+
+        if (!vehicle) {
+            let owner = await VehicleOwner.findOne({ email: 'default-owner@tvds.gov' });
+            if (!owner) {
+                owner = await VehicleOwner.create({
+                    fullName: 'Manual Registry (Pending)',
+                    email: 'default-owner@tvds.gov',
+                    password: 'password123',
+                    phone: '0000000000',
+                    citizenshipNumber: 'SIM-' + Date.now()
+                });
+            }
+            vehicle = await Vehicle.create({
+                vehicleNumber,
+                vehicleType: 'Other',
+                ownerId: owner._id,
+                brand: 'Manual',
+                model: 'Manual'
+            });
+        }
+
+        const rule = await Rule.findOne({ violationType });
+        const violation = await Violation.create({
+            vehicleId: vehicle._id,
+            ownerId: vehicle.ownerId,
+            policeId: req.user._id,
+            ruleId: rule?._id,
+            violationType,
+            location,
+            status: 'Verified', // Manual entry by police is usually pre-verified
+            verifiedAt: Date.now(),
+            remarks,
+            aiDetected: false
+        });
+
+        await Evidence.create({
+            violationId: violation._id,
+            imageUrl: req.file.path,
+            cameraLocation: location,
+            uploadedBy: req.user._id
+        });
+
+        await Fine.create({
+            violationId: violation._id,
+            amount: rule ? rule.fineAmount : 1000,
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            paymentStatus: 'Pending'
+        });
+
+        res.status(201).json(violation);
+    } catch (error) {
+        res.status(500).json({ message: 'Error recording manual violation' });
+    }
+};
+
 // @desc    Get all violations
 // @route   GET /api/violations
 // @access  Private (Police/Admin)
@@ -207,8 +277,24 @@ const updateViolation = async (req, res) => {
     if (violation) {
       violation.status = req.body.status || violation.status;
       violation.remarks = req.body.remarks || violation.remarks;
+      
       if (req.body.status === 'Verified') {
           violation.verifiedAt = Date.now();
+          
+          // Generate Fine if not exists
+          const existingFine = await Fine.findOne({ violationId: violation._id });
+          if (!existingFine) {
+              const rule = await Rule.findById(violation.ruleId);
+              const dueDate = new Date();
+              dueDate.setDate(dueDate.getDate() + 30); // 30 days due
+              
+              await Fine.create({
+                  violationId: violation._id,
+                  amount: rule ? rule.fineAmount : 1000,
+                  dueDate: dueDate,
+                  paymentStatus: 'Pending'
+              });
+          }
       }
       
       const updatedViolation = await violation.save();
@@ -217,6 +303,7 @@ const updateViolation = async (req, res) => {
       res.status(404).json({ message: 'Violation not found' });
     }
   } catch (error) {
+    console.error('UpdateViolation Error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -241,4 +328,11 @@ const deleteViolation = async (req, res) => {
   }
 };
 
-export { uploadViolation, getViolations, getMyViolations, updateViolation, deleteViolation };
+export { 
+    uploadViolation, 
+    manualViolation, 
+    getViolations, 
+    getMyViolations, 
+    updateViolation, 
+    deleteViolation 
+};

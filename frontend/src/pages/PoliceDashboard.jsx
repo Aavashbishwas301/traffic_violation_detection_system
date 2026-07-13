@@ -7,33 +7,47 @@ import {
   Camera, Shield, AlertTriangle, CheckCircle2, Clock, 
   Search, Upload, Activity, History, Settings, Info,
   ChevronRight, ArrowRight, Eye, Trash2, MapPin, Cpu,
-  Database, Zap, BarChart3, Image, BadgeCheck
+  Database, Zap, BarChart3, Image, BadgeCheck,
+  Edit3, Receipt, Bell, Megaphone, XCircle, ShieldCheck
 } from 'lucide-react';
 
 const PoliceDashboard = () => {
   const [violations, setViolations] = useState([]);
+  const [rules, setRules] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [profile, setProfile] = useState(null);
+  
+  // Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState(null);
+
+  // Manual Entry State
+  const [manualEntry, setManualEntry] = useState({ vehicleNumber: '', violationType: '', location: '', remarks: '' });
+  const [manualFile, setManualFile] = useState(null);
+
+  // Detection State
+  const [detectFile, setDetectFile] = useState(null);
+  const [detectMeta, setDetectMeta] = useState({ location: 'Central Point' });
+
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Photo Upload State
-  const [file, setFile] = useState(null);
-  const [meta, setMeta] = useState({ location: 'Central Point', remarks: 'Manual Entry' });
-
   const fetchData = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      const [vRes, sRes] = await Promise.all([
+      const [vRes, sRes, rRes, pRes] = await Promise.all([
         axios.get('http://localhost:5000/api/violations', config),
-        axios.get('http://localhost:5000/api/admin/stats', config)
+        axios.get('http://localhost:5000/api/admin/stats', config),
+        axios.get('http://localhost:5000/api/admin/rules', config),
+        axios.get('http://localhost:5000/api/users/profile', config)
       ]);
       setViolations(vRes.data);
       setStats(sRes.data);
+      setRules(rRes.data || []);
+      setProfile(pRes.data);
     } catch (err) { console.error('Data sync failed'); }
     finally { setLoading(false); }
   };
@@ -50,31 +64,52 @@ const PoliceDashboard = () => {
     } catch (err) { alert('Vehicle not found.'); setSearchResult(null); }
   };
 
-  const handleUpload = async (e) => {
+  const handleAIDetect = async (e) => {
     e.preventDefault();
-    if (!file) return alert('Please select a photo first.');
+    if (!detectFile) return alert('Please select a photo/video.');
     setUploading(true);
     const formData = new FormData();
-    formData.append('evidence', file);
-    formData.append('location', meta.location);
-    formData.append('remarks', meta.remarks);
+    formData.append('evidence', detectFile);
+    formData.append('location', detectMeta.location);
 
     try {
       const config = { headers: { Authorization: `Bearer ${user?.token}`, 'Content-Type': 'multipart/form-data' } };
       await axios.post('http://localhost:5000/api/violations/upload', formData, config);
-      alert('Photo checked successfully.');
-      setFile(null);
+      alert('AI Scan complete. Results added to records.');
+      setDetectFile(null);
       fetchData();
-    } catch (err) { alert('Upload failed.'); }
+    } catch (err) { alert('Scan failed.'); }
     finally { setUploading(false); }
   };
 
-  const updateStatus = async (id, status) => {
+  const handleManualEntry = async (e) => {
+    e.preventDefault();
+    if (!manualFile) return alert('Evidence image is required for manual entry.');
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('evidence', manualFile);
+    formData.append('vehicleNumber', manualEntry.vehicleNumber);
+    formData.append('violationType', manualEntry.violationType);
+    formData.append('location', manualEntry.location);
+    formData.append('remarks', manualEntry.remarks);
+
+    try {
+      const config = { headers: { Authorization: `Bearer ${user?.token}`, 'Content-Type': 'multipart/form-data' } };
+      await axios.post('http://localhost:5000/api/violations/manual', formData, config);
+      alert('Violation recorded manually.');
+      setManualEntry({ vehicleNumber: '', violationType: '', location: '', remarks: '' });
+      setManualFile(null);
+      fetchData();
+    } catch (err) { alert('Manual entry failed.'); }
+    finally { setUploading(false); }
+  };
+
+  const updateStatus = async (id, status, remarks) => {
     try {
       const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      await axios.put(`http://localhost:5000/api/violations/${id}`, { status }, config);
+      await axios.put(`http://localhost:5000/api/violations/${id}`, { status, remarks }, config);
       fetchData();
-    } catch (err) { alert('Update failed.'); }
+    } catch (err) { alert('Status update failed.'); }
   };
 
   const deleteViolation = async (id) => {
@@ -87,14 +122,15 @@ const PoliceDashboard = () => {
   };
 
   const viewEvidence = (path) => {
-    if (!path) return alert('No photo found.');
+    if (!path) return alert('No evidence found.');
     window.open(`http://localhost:5000/${path.replace(/\\/g, '/')}`, '_blank');
   };
 
   if (loading) return (
-    <Layout title="Loading Dashboard">
-      <div className="flex items-center justify-center h-screen -mt-24">
-        <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+    <Layout title="Loading Profile">
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <Cpu className="text-primary-950 animate-spin" size={48} />
+        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-300">Synchronizing Data...</p>
       </div>
     </Layout>
   );
@@ -107,29 +143,63 @@ const PoliceDashboard = () => {
              <div className="bg-white rounded-[48px] p-12 shadow-2xl border border-neutral-100 space-y-10 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary-950/5 rounded-bl-[100px]"></div>
                 <div>
-                   <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase">Check Violation.</h3>
-                   <p className="text-[10px] font-black uppercase text-neutral-400 tracking-[0.4em] mt-2 italic border-l-4 border-accent-crimson pl-6">Upload a photo to automatically find traffic rule violations.</p>
+                   <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">AI Scan.</h3>
+                   <p className="text-[10px] font-black uppercase text-neutral-400 tracking-[0.4em] mt-2 italic border-l-4 border-accent-crimson pl-6">Upload CCTV footage or images for automated violation detection.</p>
                 </div>
 
-                <form onSubmit={handleUpload} className="space-y-8">
+                <form onSubmit={handleAIDetect} className="space-y-8">
                    <div className="border-4 border-dashed border-neutral-100 rounded-[40px] p-12 text-center hover:border-primary-900/20 transition-all group cursor-pointer relative">
-                      <input type="file" onChange={e => setFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <input type="file" onChange={e => setDetectFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" />
                       <div className="space-y-4">
-                         <div className="w-20 h-20 bg-primary-50 rounded-3xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform"><Camera className="text-primary-900" size={32} /></div>
+                         <div className="w-20 h-20 bg-primary-50 rounded-3xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform"><Upload className="text-primary-900" size={32} /></div>
                          <div>
-                            <p className="text-sm font-black italic text-primary-950 uppercase">{file ? file.name : 'Click or Drop photo here'}</p>
-                            <p className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-1 italic">JPG OR PNG PHOTO • MAX 100MB</p>
+                            <p className="text-sm font-black italic text-primary-950 uppercase">{detectFile ? detectFile.name : 'Click to Upload CCTV/Photo'}</p>
+                            <p className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-1 italic">JPG, PNG, MP4 • MAX 100MB</p>
                          </div>
                       </div>
                    </div>
-                   
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">Location Name</label><input type="text" value={meta.location} onChange={e => setMeta({...meta, location: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic" /></div>
-                      <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">Your Remarks</label><input type="text" value={meta.remarks} onChange={e => setMeta({...meta, remarks: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic" /></div>
-                   </div>
+                   <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">Detection Location</label><input type="text" value={detectMeta.location} onChange={e => setDetectMeta({...detectMeta, location: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic" /></div>
+                   <button type="submit" disabled={uploading} className="w-full py-6 bg-primary-950 text-white rounded-[32px] font-black uppercase tracking-[0.5em] text-xs shadow-2xl hover:bg-black transition-all flex items-center justify-center space-x-4">
+                      {uploading ? <Cpu className="animate-spin" /> : <><Zap size={18} /> <span>Initiate AI Engine</span></>}
+                   </button>
+                </form>
+             </div>
+          </div>
+        );
 
-                   <button type="submit" disabled={uploading} className={`w-full py-6 rounded-[32px] font-black uppercase tracking-[0.5em] text-xs shadow-2xl transition-all flex items-center justify-center space-x-4 ${uploading ? 'bg-neutral-200 text-neutral-400' : 'bg-primary-950 text-white hover:bg-black hover:-translate-y-1 shadow-primary-900/20'}`}>
-                      {uploading ? <Cpu className="animate-spin" /> : <><Zap size={18} /> <span>Start AI Check</span></>}
+      case '/manual-entry':
+        return (
+          <div className="max-w-4xl mx-auto space-y-12 animate-fade-in pb-20">
+             <div className="bg-white rounded-[48px] p-12 shadow-2xl border border-neutral-100 space-y-10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-accent-crimson/5 rounded-bl-[100px]"></div>
+                <div>
+                   <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Manual Entry.</h3>
+                   <p className="text-[10px] font-black uppercase text-neutral-400 tracking-[0.4em] mt-2 italic border-l-4 border-accent-crimson pl-6">Record a traffic violation manually with evidence.</p>
+                </div>
+                <form onSubmit={handleManualEntry} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-6">
+                      <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">Vehicle Plate</label><input type="text" placeholder="BA 1 PA 1234" value={manualEntry.vehicleNumber} onChange={e => setManualEntry({...manualEntry, vehicleNumber: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic" required /></div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">Violation Type</label>
+                        <select value={manualEntry.violationType} onChange={e => setManualEntry({...manualEntry, violationType: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic" required>
+                           <option value="">Select Type</option>
+                           {rules.map(r => <option key={r._id} value={r.violationType}>{r.violationType}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">Location</label><input type="text" value={manualEntry.location} onChange={e => setManualEntry({...manualEntry, location: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic" required /></div>
+                   </div>
+                   <div className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">Remarks</label>
+                        <textarea rows={4} value={manualEntry.remarks} onChange={e => setManualEntry({...manualEntry, remarks: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic" placeholder="Incident details..." />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">Upload Proof</label>
+                        <input type="file" onChange={e => setManualFile(e.target.files[0])} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none file:bg-primary-950 file:text-white file:border-none file:rounded-lg file:px-4 file:py-2 file:mr-4 file:cursor-pointer" required />
+                      </div>
+                   </div>
+                   <button type="submit" disabled={uploading} className="md:col-span-2 py-6 bg-primary-950 text-white rounded-[32px] font-black uppercase tracking-[0.5em] text-xs shadow-2xl hover:bg-black transition-all">
+                      {uploading ? <Cpu className="animate-spin" /> : 'Register Violation'}
                    </button>
                 </form>
              </div>
@@ -141,33 +211,29 @@ const PoliceDashboard = () => {
           <div className="space-y-8 animate-fade-in pb-20">
              <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
                 <div>
-                   <h3 className="text-3xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Manage Records.</h3>
-                   <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">List of violations that need to be checked.</p>
+                   <h3 className="text-3xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Verification Desk.</h3>
+                   <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">Review AI-detected violations before finalizing fines.</p>
                 </div>
-                <div className="bg-primary-950 text-white px-4 py-2 rounded-xl font-black text-xs italic shadow-lg">{violations.length} RECORDS</div>
              </div>
-
              <div className="bg-white rounded-[40px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col max-h-[600px]">
                 <div className="overflow-y-auto custom-scrollbar flex-1">
                    <table className="w-full text-left">
-                      <thead className="bg-neutral-50/50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
-                         <tr><th className="px-6 py-5">Record ID</th><th className="px-6 py-5">Plate No.</th><th className="px-6 py-5">Violation</th><th className="px-6 py-5">Fine</th><th className="px-6 py-5">Status</th><th className="px-6 py-5 text-right">Actions</th></tr>
+                      <thead className="bg-neutral-50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
+                         <tr><th className="px-6 py-5">Record</th><th className="px-6 py-5">Plate No.</th><th className="px-6 py-5">Violation</th><th className="px-6 py-5">AI Confidence</th><th className="px-6 py-5">Status</th><th className="px-6 py-5 text-right">Actions</th></tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
                          {violations.map(v => (
-                            <tr key={v._id} className="hover:bg-slate-50/80 transition-colors group">
+                            <tr key={v._id} className="hover:bg-slate-50 transition-colors group">
                                <td className="px-6 py-4 text-neutral-300">#{v._id.slice(-6)}</td>
-                               <td className="px-6 py-4">
-                                  <span className="px-2 py-0.5 bg-neutral-100 rounded-lg text-2xs font-black uppercase italic tracking-tighter border border-neutral-200">{v.vehicleId?.vehicleNumber || 'UNKNOWN'}</span>
-                               </td>
+                               <td className="px-6 py-4"><span className="px-3 py-1 bg-neutral-100 rounded-lg text-2xs font-black border border-neutral-200">{v.vehicleId?.vehicleNumber || 'UNKNOWN'}</span></td>
                                <td className="px-6 py-4 text-primary-950">{v.violationType}</td>
-                               <td className="px-6 py-4 text-xs font-black italic text-primary-900">NPR {v.fine?.amount || v.ruleId?.fineAmount || 'N/A'}</td>
-                               <td className="px-6 py-4"><span className={`px-2 py-0.5 rounded-lg border text-[9px] ${v.status === 'Paid' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-yellow-50 text-yellow-600 border-yellow-100'}`}>{v.status}</span></td>
+                               <td className="px-6 py-4"><div className="flex items-center space-x-2"><div className="w-16 bg-neutral-100 h-1.5 rounded-full overflow-hidden"><div className={`h-full bg-accent-crimson`} style={{width: `${(v.aiConfidence || 0.8)*100}%`}}></div></div><span className="text-[9px] text-neutral-400">{(v.aiConfidence*100 || 80).toFixed(1)}%</span></div></td>
+                               <td className="px-6 py-4"><span className={`px-2 py-0.5 rounded-lg border text-[9px] ${v.status === 'Verified' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-yellow-50 text-yellow-600 border-yellow-100'}`}>{v.status}</span></td>
                                <td className="px-6 py-4 text-right">
-                                  <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     {v.status === 'Pending' && <button onClick={() => updateStatus(v._id, 'Verified')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Approve"><CheckCircle2 size={16} /></button>}
-                                     <button onClick={() => viewEvidence(v.imageUrl || v.evidenceUrl)} className="p-2 text-primary-900 hover:bg-primary-50 rounded-lg" title="See Photo"><Eye size={16} /></button>
-                                     <button onClick={() => deleteViolation(v._id)} className="p-2 text-accent-crimson hover:bg-accent-crimson/5 rounded-lg" title="Delete"><Trash2 size={16} /></button>
+                                  <div className="flex items-center justify-end space-x-2">
+                                     {v.status === 'Pending' && <button onClick={() => updateStatus(v._id, 'Verified', 'Verified by Officer')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Approve"><CheckCircle2 size={16} /></button>}
+                                     {v.status === 'Pending' && <button onClick={() => updateStatus(v._id, 'Rejected', 'Manual Rejection')} className="p-2 text-accent-crimson hover:bg-red-50 rounded-lg" title="Reject"><XCircle size={16} /></button>}
+                                     <button onClick={() => viewEvidence(v.imageUrl || v.evidenceUrl)} className="p-2 text-primary-900 hover:bg-primary-50 rounded-lg" title="See Proof"><Eye size={16} /></button>
                                   </div>
                                </td>
                             </tr>
@@ -185,9 +251,9 @@ const PoliceDashboard = () => {
              <div className="bg-primary-950 rounded-[48px] p-12 text-white shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-accent-crimson/10 rounded-full blur-[80px]"></div>
                 <div className="relative z-10 space-y-8">
-                   <h3 className="text-5xl font-black italic tracking-tighter uppercase leading-none">Search <br /> Vehicles.</h3>
+                   <h3 className="text-5xl font-black italic tracking-tighter uppercase leading-none underline decoration-accent-crimson underline-offset-8">Vehicle <br /> Verification.</h3>
                    <form onSubmit={handleSearch} className="relative group max-w-xl">
-                      <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value.toUpperCase())} placeholder="Example: BA-1-PA-1234" className="w-full bg-white/10 border-2 border-white/10 rounded-[28px] py-6 pl-14 pr-8 font-black text-xl italic outline-none focus:ring-8 focus:ring-white/5 focus:border-white/30 transition-all uppercase placeholder:text-white/20" />
+                      <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value.toUpperCase())} placeholder="PLATE NUMBER..." className="w-full bg-white/10 border-2 border-white/10 rounded-[28px] py-6 pl-14 pr-8 font-black text-xl italic outline-none focus:ring-8 focus:ring-white/5 focus:border-white/30 transition-all uppercase placeholder:text-white/20" />
                       <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={24} />
                       <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 bg-white text-primary-950 p-3 rounded-2xl hover:scale-105 transition-all active:scale-95"><ArrowRight size={20} /></button>
                    </form>
@@ -195,31 +261,71 @@ const PoliceDashboard = () => {
              </div>
 
              {searchResult && (
-                <div className="bg-white rounded-[48px] p-10 shadow-2xl border border-neutral-100 grid grid-cols-1 md:grid-cols-2 gap-12 animate-slide-up">
-                   <div className="space-y-8">
-                      <div className="inline-flex items-center space-x-3 px-4 py-1.5 bg-green-50 text-green-600 rounded-full border border-green-100 text-[10px] font-black uppercase italic">
-                         <Shield size={12} /> <span>Verified Vehicle</span>
-                      </div>
-                      <div className="space-y-1">
-                         <p className="text-xs font-bold text-neutral-300 uppercase tracking-widest">Plate Number</p>
-                         <p className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase">{searchResult.vehicle.vehicleNumber}</p>
-                      </div>
-                      <div className="space-y-1">
-                         <p className="text-xs font-bold text-neutral-300 uppercase tracking-widest">Owner Name</p>
-                         <p className="text-2xl font-black italic text-primary-950 uppercase">{searchResult.vehicle.ownerId?.fullName || 'NOT REGISTERED'}</p>
+                <div className="bg-white rounded-[48px] p-12 shadow-2xl border border-neutral-100 grid grid-cols-1 lg:grid-cols-2 gap-16 animate-slide-up">
+                   <div className="space-y-10">
+                      <div><h4 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">{searchResult.vehicle.vehicleNumber}</h4><p className="text-[10px] font-black text-neutral-300 uppercase mt-4 tracking-widest italic border-l-4 border-green-500 pl-6">Active Registration Registry</p></div>
+                      <div className="space-y-6">
+                         <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100"><p className="text-[9px] font-black text-neutral-300 uppercase tracking-widest mb-1">Legal Owner</p><p className="text-xl font-black italic text-primary-950 uppercase">{searchResult.vehicle.ownerId?.fullName}</p></div>
+                         <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100"><p className="text-[9px] font-black text-neutral-300 uppercase tracking-widest mb-1">Phone Contact</p><p className="text-xl font-black italic text-primary-950 uppercase">{searchResult.vehicle.ownerId?.phone || 'HIDDEN'}</p></div>
                       </div>
                    </div>
-                   <div className="bg-slate-50 rounded-[32px] p-8 space-y-6">
-                      <h4 className="text-xs font-black uppercase tracking-[0.3em] text-neutral-400 border-b pb-3 italic">Vehicle Details</h4>
-                      <div className="grid grid-cols-2 gap-4 text-[10px] font-bold uppercase italic">
-                         <div><p className="text-neutral-300 mb-1">Type</p><p className="text-primary-950">{searchResult.vehicle.vehicleType}</p></div>
-                         <div><p className="text-neutral-300 mb-1">Brand</p><p className="text-primary-950">{searchResult.vehicle.brand}</p></div>
-                         <div><p className="text-neutral-300 mb-1">Insurance</p><p className="text-green-600">{searchResult.vehicle.insuranceStatus}</p></div>
-                         <div><p className="text-neutral-300 mb-1">Tax Status</p><p className="text-green-600">{searchResult.vehicle.taxStatus}</p></div>
+                   <div className="space-y-10">
+                      <div className="bg-primary-950 text-white p-10 rounded-[40px] space-y-8 relative overflow-hidden">
+                         <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-bl-[60px]"></div>
+                         <h4 className="text-xs font-black uppercase tracking-[0.4em] border-b border-white/10 pb-4 italic">Registry Status</h4>
+                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-[10px] font-bold uppercase italic">
+                            <div><p className="text-white/40 mb-1">Insurance</p><p className="text-green-400 font-black">VALID</p></div>
+                            <div><p className="text-white/40 mb-1">Bluebook Tax</p><p className="text-green-400 font-black">PAID</p></div>
+                            <div><p className="text-white/40 mb-1">Violation Hist.</p><p className="text-yellow-400 font-black">{searchResult.violations?.length || 0} EVENTS</p></div>
+                            <div><p className="text-white/40 mb-1">Unpaid Fines</p><p className="text-accent-crimson font-black">NPR 0</p></div>
+                         </div>
+                      </div>
+                      <div className="p-8 border-4 border-dashed border-neutral-100 rounded-[40px] flex items-center justify-between group hover:border-primary-950/10 transition-all cursor-pointer">
+                         <div className="flex items-center space-x-6">
+                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-primary-900 group-hover:bg-primary-900 group-hover:text-white transition-colors"><BadgeCheck size={32} /></div>
+                            <div><p className="text-[9px] font-black text-neutral-300 uppercase tracking-widest">Operator Permit</p><p className="text-sm font-black italic text-primary-950 uppercase">Driving License Linked</p></div>
+                         </div>
+                         <Eye className="text-neutral-200 group-hover:text-primary-950" size={20} />
                       </div>
                    </div>
                 </div>
              )}
+          </div>
+        );
+
+      case '/records':
+        return (
+          <div className="space-y-8 animate-fade-in pb-20">
+             <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
+                <div>
+                   <h3 className="text-3xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Violation Records.</h3>
+                   <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">Historical database of all traffic offenses recorded.</p>
+                </div>
+                <div className="flex space-x-2">
+                    <button className="px-5 py-2.5 bg-neutral-100 rounded-xl text-[9px] font-black uppercase hover:bg-neutral-200 transition-all">Filter by Date</button>
+                    <button className="px-5 py-2.5 bg-primary-950 text-white rounded-xl text-[9px] font-black uppercase hover:bg-black transition-all shadow-lg shadow-primary-950/20">Export CSV</button>
+                </div>
+             </div>
+             <div className="bg-white rounded-[40px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col max-h-[600px]">
+                <div className="overflow-y-auto custom-scrollbar flex-1">
+                   <table className="w-full text-left">
+                      <thead className="bg-neutral-50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
+                         <tr><th className="px-6 py-5">Date</th><th className="px-6 py-5">Vehicle</th><th className="px-6 py-5">Offense</th><th className="px-6 py-5">Fine</th><th className="px-6 py-5 text-right">Status</th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
+                         {violations.map(v => (
+                            <tr key={v._id} className="hover:bg-slate-50 transition-colors">
+                               <td className="px-6 py-4 text-neutral-400">{new Date(v.violationDateTime).toLocaleDateString()}</td>
+                               <td className="px-6 py-4 text-primary-950 font-black tracking-tighter">{v.vehicleId?.vehicleNumber}</td>
+                               <td className="px-6 py-4 text-neutral-400">{v.violationType}</td>
+                               <td className="px-6 py-4 font-black italic text-primary-950">NPR {v.fine?.amount || v.ruleId?.fineAmount}</td>
+                               <td className="px-6 py-4 text-right"><span className={`px-2 py-0.5 rounded-lg border text-[8px] ${v.status === 'Verified' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>{v.status?.toUpperCase()}</span></td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                </div>
+             </div>
           </div>
         );
 
@@ -228,8 +334,8 @@ const PoliceDashboard = () => {
           <div className="space-y-8 animate-fade-in pb-20">
              <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
                 <div>
-                   <h3 className="text-3xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Evidence Photos.</h3>
-                   <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">Photos taken by traffic cameras as proof</p>
+                   <h3 className="text-3xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Evidence Vault.</h3>
+                   <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">Legal proof repository for all recorded incidents.</p>
                 </div>
              </div>
              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
@@ -238,7 +344,7 @@ const PoliceDashboard = () => {
                       <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden">
                         {v.imageUrl || v.evidenceUrl ? <img src={`http://localhost:5000/${(v.imageUrl || v.evidenceUrl).replace(/\\/g, '/')}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" /> : <Image size={40} className="text-neutral-200" />}
                       </div>
-                      <div className="p-4 bg-white border-t border-neutral-50">
+                      <div className="p-4 bg-white border-t border-neutral-50 text-left">
                         <p className="text-[9px] font-black uppercase text-primary-950 italic truncate">ID-{v._id.slice(-8)}</p>
                         <p className="text-[8px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">{v.violationType}</p>
                       </div>
@@ -255,22 +361,22 @@ const PoliceDashboard = () => {
              <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
                 <div>
                    <h3 className="text-3xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Fine Records.</h3>
-                   <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">Records of paid and unpaid traffic fines.</p>
+                   <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">Financial oversight of all penalties issued.</p>
                 </div>
              </div>
              <div className="bg-white rounded-[40px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col max-h-[600px]">
                 <div className="overflow-y-auto custom-scrollbar flex-1">
                    <table className="w-full text-left">
-                      <thead className="bg-neutral-50/50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
-                         <tr><th className="px-6 py-5">Record ID</th><th className="px-6 py-5">Fine</th><th className="px-6 py-5">Status</th><th className="px-6 py-5 text-right">Date & Time</th></tr>
+                      <thead className="bg-neutral-50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
+                         <tr><th className="px-6 py-5">Record</th><th className="px-6 py-5">Amount</th><th className="px-6 py-5">Due Date</th><th className="px-6 py-5 text-right">Status</th></tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
                          {violations.map(v => (
-                            <tr key={v._id} className="hover:bg-slate-50/80 transition-colors">
-                               <td className="px-6 py-4 text-neutral-300">#{v._id.slice(-6)}</td>
-                               <td className="px-6 py-4 text-xs font-black italic text-primary-900">NPR {v.fine?.amount || v.ruleId?.fineAmount || 'N/A'}</td>
-                               <td className="px-6 py-4"><span className={`px-2 py-0.5 rounded-lg border text-[9px] ${v.status === 'Paid' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-yellow-50 text-yellow-600 border-yellow-100'}`}>{v.status}</span></td>
-                               <td className="px-6 py-4 text-right text-neutral-400">{new Date(v.violationDateTime).toLocaleDateString()}</td>
+                            <tr key={v._id} className="hover:bg-slate-50 transition-colors">
+                               <td className="px-6 py-4 text-neutral-400">#PAY-{v._id.slice(-6).toUpperCase()}</td>
+                               <td className="px-6 py-4 font-black italic text-primary-950">NPR {v.fine?.amount || v.ruleId?.fineAmount}</td>
+                               <td className="px-6 py-4 text-neutral-400">{v.fine?.dueDate ? new Date(v.fine.dueDate).toLocaleDateString() : 'N/A'}</td>
+                               <td className="px-6 py-4 text-right"><span className={`px-2 py-0.5 rounded-lg border text-[8px] ${v.status === 'Paid' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-yellow-50 text-yellow-600 border-yellow-100'}`}>{v.status?.toUpperCase()}</span></td>
                             </tr>
                          ))}
                       </tbody>
@@ -302,8 +408,8 @@ const PoliceDashboard = () => {
                 <div className="bg-primary-900 text-white p-10 rounded-[48px] shadow-2xl space-y-8 relative overflow-hidden">
                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[100px]"></div>
                    <h4 className="text-xl font-black italic uppercase">Money Collected</h4>
-                   <div className="space-y-2">
-                      <p className="text-5xl font-black italic tracking-tighter leading-none">NPR {stats?.summary?.totalRevenue?.toLocaleString()}</p>
+                   <div className="space-y-2 text-left">
+                      <p className="text-5xl font-black italic tracking-tighter leading-none text-white">NPR {stats?.summary?.totalRevenue?.toLocaleString()}</p>
                       <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Total value of all paid fines</p>
                    </div>
                 </div>
@@ -311,20 +417,29 @@ const PoliceDashboard = () => {
           </div>
         );
 
-      case '/settings':
+      case '/notifications':
         return (
-          <div className="max-w-xl mx-auto space-y-8 animate-fade-in pb-20">
-             <div className="bg-white border border-neutral-100 rounded-[40px] p-10 shadow-2xl space-y-8 border-l-8 border-accent-crimson">
-                <div className="flex items-center space-x-6">
-                   <div className="w-20 h-20 bg-primary-950 rounded-[24px] flex items-center justify-center text-white font-black text-4xl italic border-4 border-white shadow-2xl">{user?.name?.charAt(0)}</div>
-                   <div><h4 className="text-3xl font-black italic tracking-tighter text-primary-950 leading-none">{user?.name}</h4><p className="text-2xs font-black uppercase text-accent-crimson tracking-[0.3em] mt-2 italic">Officer Badge: {user?.badgeNumber || 'OFFICER'}</p></div>
-                </div>
-                <div className="space-y-4 pt-4">
-                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                      <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest mb-1">Assigned Unit</p>
-                      <p className="text-sm font-black italic text-primary-950 uppercase">Traffic Management Division</p>
+          <div className="max-w-4xl mx-auto space-y-12 animate-fade-in pb-20">
+             <div className="border-b-4 border-primary-950 pb-6">
+                <h3 className="text-5xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Officer Alerts.</h3>
+                <p className="text-[10px] font-black text-neutral-300 uppercase mt-4 italic border-l-4 border-accent-crimson pl-6">System-wide notifications and grid status updates</p>
+             </div>
+             <div className="space-y-6">
+                <div className="p-10 bg-white rounded-[48px] shadow-2xl border border-neutral-100 flex items-start space-x-8 group hover:bg-slate-50 transition-all">
+                   <div className="w-16 h-16 bg-accent-crimson text-white rounded-3xl flex items-center justify-center shadow-xl group-hover:rotate-6 transition-transform"><Megaphone size={28} /></div>
+                   <div className="space-y-2">
+                      <h4 className="text-xl font-black italic uppercase text-primary-950">System Maintenance Scheduled</h4>
+                      <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest italic">Today at 11:59 PM</p>
+                      <p className="text-sm font-black italic text-neutral-400 uppercase leading-relaxed max-w-xl">Grid node 4 will undergo routine maintenance. AI detection might experience brief latency during this period.</p>
                    </div>
-                   <button onClick={() => alert('Password update requested.')} className="w-full py-5 bg-primary-950 text-white rounded-2xl uppercase font-black text-xs tracking-[0.5em] shadow-2xl shadow-primary-900/20">Change Password</button>
+                </div>
+                <div className="p-10 bg-white rounded-[48px] shadow-2xl border border-neutral-100 flex items-start space-x-8 group hover:bg-slate-50 transition-all opacity-60">
+                   <div className="w-16 h-16 bg-primary-950 text-white rounded-3xl flex items-center justify-center shadow-xl group-hover:rotate-6 transition-transform"><ShieldCheck size={28} /></div>
+                   <div className="space-y-2">
+                      <h4 className="text-xl font-black italic uppercase text-primary-950">New Enforcement Rules Applied</h4>
+                      <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest italic">2 Days Ago</p>
+                      <p className="text-sm font-black italic text-neutral-400 uppercase leading-relaxed max-w-xl">Fine amounts for 'No Helmet' have been updated to NPR 1000 by central command.</p>
+                   </div>
                 </div>
              </div>
           </div>
@@ -334,35 +449,31 @@ const PoliceDashboard = () => {
       default:
         return (
           <div className="space-y-12 animate-fade-in pb-20">
-             {/* --- WELCOME BANNER --- */}
+             {/* --- COMMAND BANNER --- */}
              <div className="bg-primary-950 rounded-[64px] p-16 text-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] relative overflow-hidden border-b-[16px] border-accent-crimson group transition-all duration-1000">
                 <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-accent-crimson/10 to-transparent skew-x-12 transform origin-top-right"></div>
-                
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
                    <div className="space-y-10">
                       <div className="inline-flex items-center space-x-4 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-2xl shadow-inner">
                          <div className="w-2.5 h-2.5 rounded-full bg-accent-crimson shadow-[0_0_15px_#dc143c] animate-ping"></div>
-                         <span className="text-[10px] font-black uppercase tracking-[0.6em] italic text-white/80">Duty Status: Signed In</span>
+                         <span className="text-[10px] font-black uppercase tracking-[0.6em] italic text-white/80">Duty Station: Grid North</span>
                       </div>
                       <div className="space-y-4">
                         <h2 className="text-8xl font-black uppercase italic tracking-tighter leading-[0.8] group-hover:translate-x-4 transition-transform duration-1000">
-                           Officer <br /> {user?.name.split(' ')[0]} <br />
-                           <span className="text-accent-crimson">Panel.</span>
+                           {user?.name.split(' ')[0]} <br />
+                           <span className="text-accent-crimson font-black tracking-[-0.1em]">Officer.</span>
                         </h2>
                         <p className="text-white/30 font-bold uppercase text-[11px] tracking-[0.6em] italic border-l-4 border-accent-crimson pl-8 max-w-md">
-                           Official Traffic Police Dashboard. <br /> 
-                           Record and manage violations easily.
+                           Central Enforcement Hub. <br /> 
+                           Record incidents and scan grid footage.
                         </p>
                       </div>
                    </div>
                    
-                   <div className="bg-white/5 backdrop-blur-3xl p-14 rounded-[56px] border border-white/10 flex flex-col items-center justify-center space-y-4 min-w-[280px] shadow-[inset_0_0_40px_rgba(255,255,255,0.02)] group-hover:bg-white/10 transition-all duration-700 cursor-crosshair group/stability">
-                      <p className="text-[11px] font-black text-white/40 uppercase tracking-[0.5em] italic">System Online</p>
-                      <p className="text-7xl font-black italic tracking-tighter text-accent-emerald uppercase group-hover/stability:scale-110 transition-transform duration-700">98.2%</p>
-                      <div className="h-1 w-24 bg-white/10 rounded-full overflow-hidden">
-                         <div className="h-full bg-accent-emerald w-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
-                      </div>
+                   <div className="bg-white/5 backdrop-blur-3xl p-14 rounded-[56px] border border-white/10 flex flex-col items-center justify-center space-y-4 min-w-[280px] shadow-inner group-hover:bg-white/10 transition-all duration-700 cursor-crosshair">
+                      <p className="text-[11px] font-black text-white/40 uppercase tracking-[0.5em] italic">Pending Review</p>
+                      <p className="text-9xl font-black italic tracking-tighter text-white leading-none group-hover:scale-110 transition-transform duration-700">{violations.filter(v => v.status === 'Pending').length}</p>
+                      <button onClick={() => navigate('/manage')} className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Go to Desk</button>
                    </div>
                 </div>
              </div>
@@ -370,13 +481,12 @@ const PoliceDashboard = () => {
              {/* --- STATS GRID --- */}
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {[
-                    { label: 'Violations Found', value: stats?.summary?.totalViolations || 0, icon: Activity, color: 'text-primary-950', bg: 'bg-primary-950/5', border: 'border-primary-950/10' },
-                    { label: 'Need Checking', value: stats?.summary?.pendingViolations || 0, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-500/5', border: 'border-yellow-500/20' },
-                    { label: 'Total Money', value: `NPR ${stats?.summary?.totalRevenue?.toLocaleString() || 0}`, icon: Zap, color: 'text-green-600', bg: 'bg-green-500/5', border: 'border-green-500/20' },
-                    { label: 'Vehicles Checked', value: stats?.summary?.totalVehicles || 0, icon: Database, color: 'text-blue-600', bg: 'bg-blue-500/5', border: 'border-blue-500/20' }
+                    { label: 'Today Catch', value: violations.filter(v => new Date(v.createdAt).toDateString() === new Date().toDateString()).length, icon: Camera, color: 'text-primary-950', bg: 'bg-primary-950/5', border: 'border-primary-950/10' },
+                    { label: 'Manual Entry', value: violations.filter(v => !v.aiDetected).length, icon: Edit3, color: 'text-yellow-600', bg: 'bg-yellow-500/5', border: 'border-yellow-500/20' },
+                    { label: 'Fines Issued', value: `NPR ${stats?.summary?.totalRevenue?.toLocaleString() || 0}`, icon: Receipt, color: 'text-green-600', bg: 'bg-green-500/5', border: 'border-green-500/20' },
+                    { label: 'Active Alerts', value: 2, icon: Bell, color: 'text-accent-crimson', bg: 'bg-accent-crimson/5', border: 'border-accent-crimson/10' }
                 ].map((s, i) => (
-                    <div key={i} className={`bg-white p-10 rounded-[56px] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border-2 ${s.border} flex flex-col items-center text-center space-y-5 hover:-translate-y-3 transition-all duration-500 relative overflow-hidden group`}>
-                        <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-1000 -z-10"></div>
+                    <div key={i} className={`bg-white p-10 rounded-[56px] shadow-xl border-2 ${s.border} flex flex-col items-center text-center space-y-5 hover:-translate-y-3 transition-all duration-500 relative overflow-hidden group`}>
                         <div className={`w-16 h-16 ${s.bg} rounded-[24px] flex items-center justify-center ${s.color} shadow-inner group-hover:rotate-12 transition-transform`}><s.icon size={28} /></div>
                         <div className="space-y-1">
                             <p className="text-[10px] font-black uppercase text-neutral-300 tracking-[0.2em] italic">{s.label}</p>
@@ -386,45 +496,32 @@ const PoliceDashboard = () => {
                 ))}
              </div>
 
-             {/* --- RECENT ACTIVITY --- */}
+             {/* --- ACTION NODES --- */}
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-white p-10 rounded-[48px] shadow-2xl border border-neutral-50 space-y-8">
-                    <div className="flex items-center justify-between border-b pb-4 border-neutral-50">
-                        <h3 className="text-2xl font-black uppercase italic tracking-tighter text-primary-950">Recent History</h3>
-                        <Link to="/manage" className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-900 hover:text-accent-crimson transition-colors flex items-center space-x-2"><span>View All</span> <ChevronRight size={14} /></Link>
+                <div className="lg:col-span-2 space-y-8">
+                    <div className="flex items-center justify-between border-b-2 border-neutral-50 pb-6">
+                        <h3 className="text-3xl font-black uppercase italic tracking-tighter text-primary-950 underline decoration-accent-crimson decoration-4 underline-offset-8">Quick Actions.</h3>
                     </div>
-                    <div className="space-y-4">
-                      {violations.slice(0, 4).map(v => (
-                        <div key={v._id} className="p-5 rounded-3xl flex items-center justify-between shadow-lg group hover:bg-slate-50 transition-all border border-neutral-50 bg-white">
-                            <div className="flex items-center space-x-5">
-                                <div className="w-12 h-12 bg-primary-900 text-white rounded-2xl flex items-center justify-center shadow-xl group-hover:rotate-6 transition-transform"><Camera size={20} /></div>
-                                <div>
-                                    <p className="text-xs font-black uppercase italic tracking-tight text-primary-950">{v.violationType}</p>
-                                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-[0.2em] mt-0.5 italic">{v.vehicleId?.vehicleNumber || 'UNKNOWN'}</p>
-                                </div>
-                            </div>
-                            <span className={`text-[9px] font-black px-3 py-1 rounded-full border uppercase italic tracking-tighter ${v.status === 'Paid' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-yellow-50 border-yellow-100 text-yellow-600'}`}>{v.status}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div onClick={() => navigate('/detect')} className="p-10 bg-white border border-neutral-100 rounded-[48px] shadow-2xl space-y-6 group cursor-pointer hover:bg-primary-950 transition-all duration-500">
+                            <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center text-primary-900 group-hover:bg-white/10 group-hover:text-white transition-all"><Camera size={28} /></div>
+                            <div><h4 className="text-xl font-black italic uppercase text-primary-950 group-hover:text-white">AI Detection.</h4><p className="text-[10px] font-bold text-neutral-300 group-hover:text-white/40 uppercase tracking-widest mt-2 italic leading-relaxed">Scan footage for auto-detecting rules.</p></div>
                         </div>
-                      ))}
+                        <div onClick={() => navigate('/manual-entry')} className="p-10 bg-white border border-neutral-100 rounded-[48px] shadow-2xl space-y-6 group cursor-pointer hover:bg-accent-crimson transition-all duration-500">
+                            <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center text-primary-900 group-hover:bg-white/10 group-hover:text-white transition-all"><Edit3 size={28} /></div>
+                            <div><h4 className="text-xl font-black italic uppercase text-primary-950 group-hover:text-white">Manual Entry.</h4><p className="text-[10px] font-bold text-neutral-300 group-hover:text-white/40 uppercase tracking-widest mt-2 italic leading-relaxed">Input violation details manually.</p></div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="space-y-8 flex flex-col">
-                   <div className="bg-accent-crimson rounded-[48px] p-10 text-white shadow-2xl relative overflow-hidden group flex-1">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-[100px]"></div>
-                      <div className="relative z-10 space-y-6">
-                         <h4 className="text-2xl font-black uppercase italic tracking-tighter">Check Photo</h4>
-                         <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest leading-relaxed">Upload a photo to automatically check for traffic violations.</p>
-                         <button onClick={() => navigate('/detect')} className="w-full py-5 bg-white text-accent-crimson rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] italic shadow-2xl hover:bg-neutral-100 transition-all">Start Check</button>
-                      </div>
-                   </div>
-
-                   <div className="bg-white p-8 rounded-[48px] shadow-2xl border border-neutral-100 space-y-6 flex-1 text-center">
-                      <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><BarChart3 className="text-primary-900" size={24} /></div>
-                      <h4 className="text-xl font-black uppercase italic tracking-tighter text-primary-950">Police Stats</h4>
-                      <p className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest leading-relaxed">View how many violations are caught and fine collection stats.</p>
-                      <button onClick={() => navigate('/reports')} className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-950 hover:text-accent-crimson transition-colors flex items-center space-x-2 mx-auto"><span>Open Reports</span> <ChevronRight size={14} /></button>
-                   </div>
+                <div className="bg-primary-900 p-12 rounded-[64px] text-white shadow-2xl relative overflow-hidden group hover:scale-[1.02] transition-all duration-700 h-full flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[100px]"></div>
+                    <div className="space-y-6">
+                        <div className="w-16 h-16 bg-white/10 rounded-3xl flex items-center justify-center shadow-inner"><Activity size={28} /></div>
+                        <h4 className="text-3xl font-black uppercase italic tracking-tighter leading-tight underline decoration-white/20 underline-offset-8">Duty <br /> Log.</h4>
+                        <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest leading-relaxed italic">All actions are recorded for legal verification. Ensure evidence is linked.</p>
+                    </div>
+                    <button onClick={() => navigate('/records')} className="w-full py-6 bg-white text-primary-900 rounded-[28px] text-[11px] font-black uppercase tracking-[0.4em] italic shadow-2xl hover:bg-neutral-50 transition-all mt-10">Historical Data</button>
                 </div>
              </div>
           </div>
@@ -434,13 +531,16 @@ const PoliceDashboard = () => {
 
   const getPageTitle = () => {
     const titles = { 
-        '/dashboard': 'Officer Dashboard', 
-        '/detect': 'Check Violation', 
-        '/manage': 'Manage Records', 
-        '/evidence': 'Evidence Photos', 
-        '/search': 'Search Vehicle', 
-        '/fines': 'Fine Records',
+        '/dashboard': 'Duty Station', 
+        '/detect': 'AI Detection Console', 
+        '/manual-entry': 'Manual Violation Entry',
+        '/manage': 'Verification Desk', 
+        '/search': 'Vehicle & License Check', 
+        '/evidence': 'Evidence Management', 
+        '/records': 'Violation Records',
+        '/fines': 'Fine Management',
         '/reports': 'Traffic Stats',
+        '/notifications': 'Officer Alerts',
         '/settings': 'My Profile' 
     };
     return titles[location.pathname] || 'Officer Hub';

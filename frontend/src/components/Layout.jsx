@@ -25,7 +25,8 @@ import {
   Megaphone,
   Lock,
   Globe,
-  Activity
+  Activity,
+  Edit3
 } from 'lucide-react';
 
 const Layout = ({ children, title }) => {
@@ -46,16 +47,20 @@ const Layout = ({ children, title }) => {
     { name: 'Violation Management', icon: FileText, path: '/violation-mgmt', roles: ['Admin'] },
     { name: 'Fine Management', icon: CreditCard, path: '/fines-mgmt', roles: ['Admin'] },
     { name: 'Traffic Rules', icon: Settings, path: '/financial-rules', roles: ['Admin'] },
+    { name: 'Citizen Complaints', icon: MessageSquare, path: '/complaints-mgmt', roles: ['Admin'] },
     { name: 'Reports & Analytics', icon: BarChart3, path: '/global-reports', roles: ['Admin'] },
     { name: 'Notifications', icon: Megaphone, path: '/notifications-mgmt', roles: ['Admin'] },
     { name: 'Profile Management', icon: User, path: '/settings', roles: ['Admin'] },
 
     // --- TRAFFIC POLICE ---
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['TrafficPolice'] },
-    { name: 'Check Violations', icon: Camera, path: '/detect', roles: ['TrafficPolice'] },
-    { name: 'Manage Records', icon: FileText, path: '/manage', roles: ['TrafficPolice'] },
+    { name: 'AI Scan', icon: Camera, path: '/detect', roles: ['TrafficPolice'] },
+    { name: 'Manual Entry', icon: Edit3, path: '/manual-entry', roles: ['TrafficPolice'] },
+    { name: 'Verify Desk', icon: FileText, path: '/manage', roles: ['TrafficPolice'] },
     { name: 'Evidence Photos', icon: Image, path: '/evidence', roles: ['TrafficPolice'] },
     { name: 'Search Vehicle', icon: Search, path: '/search', roles: ['TrafficPolice'] },
+    { name: 'Violation Records', icon: History, path: '/records', roles: ['TrafficPolice'] },
+    { name: 'Officer Alerts', icon: Megaphone, path: '/notifications', roles: ['TrafficPolice'] },
     { name: 'Fine Records', icon: CreditCard, path: '/fines', roles: ['TrafficPolice'] },
     { name: 'Traffic Stats', icon: BarChart3, path: '/reports', roles: ['TrafficPolice'] },
     

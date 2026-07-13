@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   uploadViolation,
+  manualViolation,
   getViolations,
   getMyViolations,
   updateViolation,
@@ -12,6 +13,7 @@ import upload from '../middleware/uploadMiddleware.js';
 const router = express.Router();
 
 router.post('/upload', protect, police, upload.single('evidence'), uploadViolation);
+router.post('/manual', protect, police, upload.single('evidence'), manualViolation);
 router.get('/', protect, police, getViolations);
 router.get('/my', protect, getMyViolations);
 

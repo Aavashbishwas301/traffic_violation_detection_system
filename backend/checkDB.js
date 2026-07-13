@@ -4,7 +4,11 @@ import TrafficPolice from './models/TrafficPolice.js';
 import VehicleOwner from './models/VehicleOwner.js';
 import dotenv from 'dotenv';
 
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const checkUsers = async () => {
   try {

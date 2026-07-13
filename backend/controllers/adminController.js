@@ -6,6 +6,7 @@ import Vehicle from '../models/Vehicle.js';
 import Rule from '../models/Rule.js';
 import Notification from '../models/Notification.js';
 import Fine from '../models/Fine.js';
+import Complaint from '../models/Complaint.js';
 
 // @desc    Get system-wide stats
 // @route   GET /api/admin/stats
@@ -175,6 +176,125 @@ const getNotifications = async (req, res) => {
     res.json(notifications);
 };
 
+// @desc    Get all complaints
+// @route   GET /api/admin/complaints
+// @access  Private (Admin)
+const getComplaints = async (req, res) => {
+    try {
+        const complaints = await Complaint.find()
+            .populate('ownerId', 'fullName email')
+            .populate({
+                path: 'violationId',
+                populate: { path: 'vehicleId' }
+            })
+            .sort({ createdAt: -1 });
+        res.json(complaints);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Respond to complaint
+// @route   PUT /api/admin/complaints/:id
+// @access  Private (Admin)
+const respondToComplaint = async (req, res) => {
+    const { status, adminResponse } = req.body;
+    try {
+        const complaint = await Complaint.findById(req.params.id);
+        if (complaint) {
+            complaint.status = status || complaint.status;
+            complaint.adminResponse = adminResponse || complaint.adminResponse;
+            await complaint.save();
+            res.json(complaint);
+        } else {
+            res.status(404).json({ message: 'Complaint not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Create a new complaint
+// @route   POST /api/admin/complaints
+// @access  Private (VehicleOwner)
+const createComplaint = async (req, res) => {
+    const { violationId, complaintMessage } = req.body;
+    try {
+        const complaint = await Complaint.create({
+            ownerId: req.user._id,
+            violationId,
+            complaintMessage,
+            status: 'Pending'
+        });
+        res.status(201).json(complaint);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Generate detailed time-based reports
+// @route   GET /api/admin/reports/:period (daily, weekly, monthly)
+// @desc    Update officer details
+// @route   PUT /api/admin/officers/:id
+// @access  Private (Admin)
+const updateOfficer = async (req, res) => {
+    const { fullName, email, badgeNumber, rank, station, status } = req.body;
+    try {
+        const officer = await TrafficPolice.findById(req.params.id);
+        if (officer) {
+            officer.fullName = fullName || officer.fullName;
+            officer.email = email || officer.email;
+            officer.badgeNumber = badgeNumber || officer.badgeNumber;
+            officer.rank = rank || officer.rank;
+            officer.station = station || officer.station;
+            officer.status = status || officer.status;
+            
+            await officer.save();
+            res.json(officer);
+        } else {
+            res.status(404).json({ message: 'Officer not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+const getDetailedReports = async (req, res) => {
+    const { period } = req.params;
+    let days = 1;
+    if (period === 'weekly') days = 7;
+    if (period === 'monthly') days = 30;
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    try {
+        const violations = await Violation.find({
+            violationDateTime: { $gte: startDate }
+        }).populate('vehicleId').populate('ruleId');
+
+        const totalFines = await Fine.aggregate([
+            { $match: { issueDate: { $gte: startDate } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } }
+        ]);
+
+        const collectionStats = await Fine.aggregate([
+            { $match: { issueDate: { $gte: startDate }, paymentStatus: 'Paid' } },
+            { $group: { _id: null, total: { $sum: "$amount" } } }
+        ]);
+
+        res.json({
+            period,
+            count: violations.length,
+            totalIssued: totalFines[0]?.total || 0,
+            totalCollected: collectionStats[0]?.total || 0,
+            violations
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 const generateGlobalReport = async (req, res) => {
     try {
         const violations = await Violation.find().populate('vehicleId').populate('ownerId');
@@ -208,5 +328,10 @@ export {
     updateRule,
     generateGlobalReport,
     broadcastMessage,
-    getNotifications
+    getNotifications,
+    getComplaints,
+    respondToComplaint,
+    getDetailedReports,
+    updateOfficer,
+    createComplaint
 };

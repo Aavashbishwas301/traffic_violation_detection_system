@@ -63,6 +63,7 @@ function App() {
             <Route path="/evidence-mgmt" element={<Dashboard />} />
             <Route path="/fines-mgmt" element={<Dashboard />} />
             <Route path="/financial-rules" element={<Dashboard />} />
+            <Route path="/complaints-mgmt" element={<Dashboard />} />
             <Route path="/global-reports" element={<Dashboard />} />
             <Route path="/reports" element={<Dashboard />} />
             <Route path="/ai-monitoring" element={<Dashboard />} />
@@ -71,9 +72,12 @@ function App() {
             
             {/* Police Specific Routes */}
             <Route path="/detect" element={<Dashboard />} />
+            <Route path="/manual-entry" element={<Dashboard />} />
             <Route path="/manage" element={<Dashboard />} />
-            <Route path="/evidence" element={<Dashboard />} />
+            <Route path="/records" element={<Dashboard />} />
+            <Route path="/notifications" element={<Dashboard />} />
             <Route path="/search" element={<Dashboard />} />
+            <Route path="/evidence" element={<Dashboard />} />
             <Route path="/fines" element={<Dashboard />} />
             
             {/* Owner Specific Routes */}

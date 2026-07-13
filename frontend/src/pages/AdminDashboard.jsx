@@ -20,6 +20,11 @@ const AdminDashboard = () => {
   const [vehicles, setVehicles] = useState([]);
   const [rules, setRules] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [complaints, setComplaints] = useState([]);
+  const [broadcast, setBroadcast] = useState({ title: '', message: '' });
+  const [officerForm, setOfficerForm] = useState({ fullName: '', email: '', password: '', badgeNumber: '', role: 'TrafficPolice' });
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,18 +33,37 @@ const AdminDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const handleOfficerSubmit = async (e) => {
+    e.preventDefault();
+    try {
+        const config = { headers: { Authorization: `Bearer ${user?.token}` } };
+        if (editingId) {
+            await axios.put(`http://localhost:5000/api/admin/officers/${editingId}`, officerForm, config);
+            alert('Officer updated.');
+        } else {
+            await axios.post('http://localhost:5000/api/users', officerForm, config);
+            alert('Officer registered.');
+        }
+        setShowModal(false);
+        setOfficerForm({ fullName: '', email: '', password: '', badgeNumber: '', role: 'TrafficPolice' });
+        setEditingId(null);
+        fetchGlobalData();
+    } catch (err) { alert(err.response?.data?.message || 'Operation failed.'); }
+  };
+
   const fetchGlobalData = async () => {
     if (!user?.token) return;
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const [sRes, uRes, vRes, vhRes, rRes, nRes, repRes] = await Promise.all([
+      const [sRes, uRes, vRes, vhRes, rRes, nRes, repRes, cRes] = await Promise.all([
         axios.get('http://localhost:5000/api/admin/stats', config),
         axios.get('http://localhost:5000/api/admin/users', config),
         axios.get('http://localhost:5000/api/violations', config),
         axios.get('http://localhost:5000/api/admin/vehicles', config),
         axios.get('http://localhost:5000/api/admin/rules', config),
         axios.get('http://localhost:5000/api/admin/notifications', config),
-        axios.get('http://localhost:5000/api/admin/report', config)
+        axios.get('http://localhost:5000/api/admin/report', config),
+        axios.get('http://localhost:5000/api/admin/complaints', config)
       ]);
       setStats(sRes.data);
       setUsers(uRes.data || []);
@@ -48,6 +72,7 @@ const AdminDashboard = () => {
       setRules(rRes.data || []);
       setNotifications(nRes.data || []);
       setReport(repRes.data);
+      setComplaints(cRes.data || []);
       setError('');
     } catch (err) { 
         setError('Connection Failure. Please try again.'); 
@@ -57,6 +82,26 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => { fetchGlobalData(); }, [user, location.pathname]);
+
+  const sendBroadcast = async (e) => {
+    e.preventDefault();
+    if (!broadcast.title || !broadcast.message) return alert('Fill all fields.');
+    try {
+        const config = { headers: { Authorization: `Bearer ${user?.token}` } };
+        await axios.post('http://localhost:5000/api/admin/broadcast', broadcast, config);
+        alert('Broadcast sent to all users.');
+        setBroadcast({ title: '', message: '' });
+    } catch (err) { alert('Broadcast failed.'); }
+  };
+
+  const updateComplaint = async (id, status, responseText) => {
+    try {
+        const config = { headers: { Authorization: `Bearer ${user?.token}` } };
+        await axios.put(`http://localhost:5000/api/admin/complaints/${id}`, { status, adminResponse: responseText }, config);
+        alert('Complaint updated.');
+        fetchGlobalData();
+    } catch (err) { alert('Update failed.'); }
+  };
 
   const deleteItem = async (type, id, extra = '') => {
     if (!window.confirm(`Delete this ${type}?`)) return;
@@ -79,6 +124,19 @@ const AdminDashboard = () => {
     </Layout>
   );
 
+  if (error) return (
+    <Layout title="System Error">
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-6 text-center">
+        <AlertTriangle className="text-accent-crimson animate-bounce" size={64} />
+        <div className="space-y-2">
+            <h3 className="text-2xl font-black uppercase italic text-primary-950">Connection Failure</h3>
+            <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest max-w-md">{error}</p>
+        </div>
+        <button onClick={fetchGlobalData} className="px-10 py-4 bg-primary-950 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-black transition-all">Retry Handshake</button>
+      </div>
+    </Layout>
+  );
+
   const getPageTitle = () => {
     const titles = { 
       '/dashboard': 'System Overview', 
@@ -87,6 +145,7 @@ const AdminDashboard = () => {
       '/violation-mgmt': 'Violation Management',
       '/fines-mgmt': 'Fine Management',
       '/financial-rules': 'Traffic Rules',
+      '/complaints-mgmt': 'Citizen Complaints',
       '/global-reports': 'Reports & Analytics',
       '/notifications-mgmt': 'System Notifications',
       '/settings': 'Profile Management' 
@@ -98,10 +157,38 @@ const AdminDashboard = () => {
     switch (location.pathname) {
       case '/officers':
         return (
-          <div className="space-y-10 animate-fade-in pb-20 h-full flex flex-col">
+          <div className="space-y-10 animate-fade-in pb-20 h-full flex flex-col relative">
+            {/* Modal */}
+            {showModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-xl bg-primary-950/20">
+                    <div className="bg-white rounded-[48px] p-12 shadow-2xl max-w-xl w-full border border-neutral-100 space-y-10 animate-slide-up">
+                        <div>
+                            <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">{editingId ? 'Update' : 'Register'} Officer.</h3>
+                            <p className="text-[10px] font-black text-neutral-300 uppercase mt-4 italic border-l-4 border-accent-crimson pl-6">Initialize security credentials for the grid.</p>
+                        </div>
+                        <form onSubmit={handleOfficerSubmit} className="space-y-6">
+                            <div className="space-y-4">
+                                <input type="text" placeholder="Full Name" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:border-primary-950 uppercase italic" value={officerForm.fullName} onChange={e => setOfficerForm({...officerForm, fullName: e.target.value})} required />
+                                <input type="email" placeholder="Email Address" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:border-primary-950 italic lowercase" value={officerForm.email} onChange={e => setOfficerForm({...officerForm, email: e.target.value})} required />
+                                {!editingId && <input type="password" placeholder="Access Password" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:border-primary-950 italic uppercase" value={officerForm.password} onChange={e => setOfficerForm({...officerForm, password: e.target.value})} required />}
+                                <input type="text" placeholder="Badge Number" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:border-primary-950 italic uppercase" value={officerForm.badgeNumber} onChange={e => setOfficerForm({...officerForm, badgeNumber: e.target.value})} required />
+                            </div>
+                            <div className="flex space-x-4 pt-4">
+                                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-neutral-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                <button type="submit" className="flex-[2] py-5 bg-primary-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-black transition-all">Save Identity</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
                <div><h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Police Officers.</h3><p className="text-[10px] font-black text-neutral-300 uppercase mt-2 italic">Add, update, or deactivate officer accounts</p></div>
-               <button className="bg-primary-950 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center space-x-2 shadow-2xl hover:bg-black transition-all"><UserPlus size={16} /> <span>Add Officer</span></button>
+               <button onClick={() => {
+                   setEditingId(null);
+                   setOfficerForm({ fullName: '', email: '', password: '', badgeNumber: '', role: 'TrafficPolice' });
+                   setShowModal(true);
+               }} className="bg-primary-950 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center space-x-2 shadow-2xl hover:bg-black transition-all"><UserPlus size={16} /> <span>Add Officer</span></button>
             </div>
             <div className="bg-white rounded-[56px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col flex-1 min-h-0">
                <div className="overflow-y-auto custom-scrollbar">
@@ -118,7 +205,11 @@ const AdminDashboard = () => {
                               <td className="px-10 py-6"><span className="px-3 py-1 rounded-full text-[9px] font-black border bg-green-50 text-green-600 border-green-100">ACTIVE</span></td>
                               <td className="px-10 py-6 text-right">
                                  <div className="flex items-center justify-end space-x-2">
-                                    <button className="p-2 text-primary-900 hover:bg-slate-100 rounded-lg"><Edit3 size={16} /></button>
+                                    <button onClick={() => {
+                                        setEditingId(u._id);
+                                        setOfficerForm({ fullName: u.fullName, email: u.email, badgeNumber: u.badgeNumber || '', role: 'TrafficPolice' });
+                                        setShowModal(true);
+                                    }} className="p-2 text-primary-900 hover:bg-slate-100 rounded-lg"><Edit3 size={16} /></button>
                                     <button onClick={() => deleteItem('user', u._id, u.role)} className="p-2 text-accent-crimson hover:bg-accent-crimson/5 rounded-lg"><Trash2 size={16} /></button>
                                  </div>
                               </td>
@@ -251,6 +342,41 @@ const AdminDashboard = () => {
           </div>
         );
 
+      case '/complaints-mgmt':
+        return (
+          <div className="space-y-10 animate-fade-in pb-20 h-full flex flex-col">
+             <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
+                <div><h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">Citizen Complaints.</h3><p className="text-[10px] font-black text-neutral-300 uppercase mt-2 tracking-[0.4em] italic">Review and respond to violation disputes</p></div>
+                <div className="bg-primary-950 text-white px-4 py-2 rounded-xl font-black text-[10px] italic">TOTAL: {complaints.length}</div>
+             </div>
+             <div className="bg-white rounded-[56px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="overflow-y-auto custom-scrollbar">
+                   <table className="w-full text-left">
+                      <thead className="bg-neutral-50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
+                         <tr><th className="px-10 py-7">Owner</th><th className="px-10 py-7">Vehicle</th><th className="px-10 py-7">Message</th><th className="px-10 py-7">Status</th><th className="px-10 py-7 text-right">Action</th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
+                         {complaints.map(c => (
+                            <tr key={c._id} className="hover:bg-slate-50 transition-colors">
+                               <td className="px-10 py-6 text-primary-950">{c.ownerId?.fullName}</td>
+                               <td className="px-10 py-6 font-mono text-xs">{c.violationId?.vehicleId?.vehicleNumber}</td>
+                               <td className="px-10 py-6 text-neutral-400 max-w-xs truncate">{c.complaintMessage}</td>
+                               <td className="px-10 py-6"><span className={`px-3 py-1 rounded-full text-[9px] ${c.status === 'Resolved' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>{c.status}</span></td>
+                               <td className="px-10 py-6 text-right">
+                                  <button onClick={() => {
+                                      const resp = prompt('Enter resolution message:');
+                                      if (resp) updateComplaint(c._id, 'Resolved', resp);
+                                  }} className="bg-primary-950 text-white px-4 py-1.5 rounded-lg text-[10px] font-black">RESOLVE</button>
+                               </td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                </div>
+             </div>
+          </div>
+        );
+
       case '/global-reports':
         return (
           <div className="max-w-6xl mx-auto space-y-12 animate-fade-in pb-20">
@@ -283,9 +409,29 @@ const AdminDashboard = () => {
           <div className="max-w-2xl mx-auto space-y-12 animate-fade-in pb-20 text-center">
              <h3 className="text-5xl font-black italic tracking-tighter text-primary-950 uppercase leading-none underline decoration-accent-crimson decoration-8 underline-offset-8">Send Alerts.</h3>
              <p className="text-[10px] font-black text-neutral-300 uppercase mt-8 tracking-[0.4em] italic">Send important announcements to everyone in the system</p>
-             <form className="bg-white rounded-[56px] p-12 shadow-2xl border border-neutral-100 space-y-10 text-left mt-10">
-                <div className="space-y-3"><label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-4 italic">Message Title</label><input type="text" placeholder="Example: System Update" className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] p-6 font-black text-xs outline-none focus:border-primary-950 uppercase italic" /></div>
-                <div className="space-y-3"><label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-4 italic">Message Content</label><textarea rows={5} placeholder="Type your message here..." className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] p-6 font-black text-xs outline-none focus:border-primary-950 uppercase italic" /></div>
+             <form onSubmit={sendBroadcast} className="bg-white rounded-[56px] p-12 shadow-2xl border border-neutral-100 space-y-10 text-left mt-10">
+                <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-4 italic">Message Title</label>
+                    <input 
+                        type="text" 
+                        placeholder="Example: System Update" 
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] p-6 font-black text-xs outline-none focus:border-primary-950 uppercase italic"
+                        value={broadcast.title}
+                        onChange={(e) => setBroadcast({ ...broadcast, title: e.target.value })}
+                        required
+                    />
+                </div>
+                <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-4 italic">Message Content</label>
+                    <textarea 
+                        rows={5} 
+                        placeholder="Type your message here..." 
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] p-6 font-black text-xs outline-none focus:border-primary-950 uppercase italic"
+                        value={broadcast.message}
+                        onChange={(e) => setBroadcast({ ...broadcast, message: e.target.value })}
+                        required
+                    />
+                </div>
                 <button type="submit" className="w-full py-7 bg-primary-950 text-white rounded-[32px] font-black uppercase tracking-[0.5em] text-[10px] shadow-2xl hover:bg-black transition-all flex items-center justify-center space-x-4"><Megaphone size={20} /> <span>Send Announcement</span></button>
              </form>
           </div>

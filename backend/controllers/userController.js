@@ -42,6 +42,13 @@ const authUser = async (req, res) => {
             email: user.email,
             role: role,
             token: generateToken(user._id, role),
+            badgeNumber: user.badgeNumber,
+            rank: user.rank,
+            station: user.station,
+            phone: user.phone,
+            designation: user.designation,
+            joiningDate: user.joiningDate,
+            profilePhoto: user.profilePhoto
         });
     }
   } else {
@@ -97,14 +104,25 @@ const registerUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   // req.user is already populated by authMiddleware based on role
   if (req.user) {
-    res.json({
+    const profile = {
       _id: req.user._id,
       name: req.user.fullName,
       email: req.user.email,
       role: req.user.role,
       phone: req.user.phone,
       profilePhoto: req.user.profilePhoto
-    });
+    };
+
+    if (req.user.role === 'TrafficPolice') {
+        profile.badgeNumber = req.user.badgeNumber;
+        profile.rank = req.user.rank;
+        profile.station = req.user.station;
+        profile.designation = req.user.designation;
+        profile.joiningDate = req.user.joiningDate;
+        profile.status = req.user.status;
+    }
+
+    res.json(profile);
   } else {
     res.status(404).json({ message: 'User not found' });
   }

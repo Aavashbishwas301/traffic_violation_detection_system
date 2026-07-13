@@ -22,6 +22,7 @@ const OwnerDashboard = () => {
   // Settings State
   const [newPassword, setNewPassword] = useState('');
   const [profileMsg, setProfileMsg] = useState('');
+  const [complaintForm, setComplaintForm] = useState({ violationId: '', message: '' });
 
   const fetchViolations = async () => {
     try {
@@ -107,10 +108,18 @@ const OwnerDashboard = () => {
     window.open(url, '_blank');
   };
 
-  const handleAppeal = (e) => {
+  const handleAppeal = async (e) => {
     e.preventDefault();
-    alert('Complaint sent successfully.');
-    e.target.reset();
+    if (!complaintForm.violationId || !complaintForm.message) return alert('Select violation and enter details.');
+    try {
+        const config = { headers: { Authorization: `Bearer ${user?.token}` } };
+        await axios.post('http://localhost:5000/api/admin/complaints', { 
+            violationId: complaintForm.violationId, 
+            complaintMessage: complaintForm.message 
+        }, config);
+        alert('Complaint sent successfully.');
+        setComplaintForm({ violationId: '', message: '' });
+    } catch (err) { alert('Submission failed.'); }
   };
 
   if (loading) return (
@@ -228,14 +237,26 @@ const OwnerDashboard = () => {
              <form onSubmit={handleAppeal} className="bg-white border border-neutral-100 rounded-[40px] p-10 shadow-2xl space-y-6">
                 <div className="space-y-2">
                    <label className="text-2xs font-black uppercase tracking-widest text-neutral-400 italic">Select Violation</label>
-                   <select required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic">
+                   <select 
+                        required 
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic"
+                        value={complaintForm.violationId}
+                        onChange={(e) => setComplaintForm({ ...complaintForm, violationId: e.target.value })}
+                   >
                       <option value="">Choose from list</option>
                       {violations.map(v => <option key={v._id} value={v._id}>{v.violationType} - {v.vehicleId?.vehicleNumber}</option>)}
                    </select>
                 </div>
                 <div className="space-y-2">
                    <label className="text-2xs font-black uppercase tracking-widest text-neutral-400 italic">Complaint Details</label>
-                   <textarea required rows={5} placeholder="Type your message here..." className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic" />
+                   <textarea 
+                        required 
+                        rows={5} 
+                        placeholder="Type your message here..." 
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic"
+                        value={complaintForm.message}
+                        onChange={(e) => setComplaintForm({ ...complaintForm, message: e.target.value })}
+                   />
                 </div>
                 <button type="submit" className="w-full py-6 bg-primary-950 text-white rounded-[28px] font-black uppercase tracking-[0.5em] text-xs shadow-2xl hover:bg-black transition-all">Send Complaint</button>
              </form>
