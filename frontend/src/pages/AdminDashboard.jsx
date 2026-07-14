@@ -696,7 +696,34 @@ const AdminDashboard = () => {
                   Add or update violation types and fine amounts.
                 </p>
               </div>
-              <button className="bg-primary-950 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center space-x-2 shadow-2xl hover:bg-black transition-all">
+              <button
+                onClick={() => {
+                  const type = prompt("Enter violation type name:");
+                  if (!type) return;
+                  const amount = prompt("Enter fine amount (NPR):");
+                  if (!amount) return;
+                  const desc = prompt("Enter description (optional):");
+                  const config = {
+                    headers: { Authorization: `Bearer ${user?.token}` },
+                  };
+                  axios
+                    .post(
+                      "http://localhost:5000/api/admin/rules",
+                      {
+                        violationType: type,
+                        fineAmount: Number(amount),
+                        description: desc || "",
+                        isActive: true,
+                      },
+                      config,
+                    )
+                    .then(() => {
+                      alert("Rule added.");
+                      fetchGlobalData();
+                    })
+                    .catch(() => alert("Failed to add rule."));
+                }}
+                className="bg-primary-950 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center space-x-2 shadow-2xl hover:bg-black transition-all">
                 <Plus size={16} /> <span>Add New Rule</span>
               </button>
             </div>
@@ -728,7 +755,33 @@ const AdminDashboard = () => {
                         NPR {r.fineAmount}
                       </p>
                     </div>
-                    <button className="p-4 bg-primary-950 text-white rounded-[24px] shadow-xl hover:rotate-12 transition-transform">
+                    <button
+                      onClick={() => {
+                        const amount = prompt(
+                          `Current fine: NPR ${r.fineAmount}. Enter new amount:`,
+                        );
+                        if (!amount) return;
+                        const config = {
+                          headers: { Authorization: `Bearer ${user?.token}` },
+                        };
+                        axios
+                          .post(
+                            "http://localhost:5000/api/admin/rules",
+                            {
+                              violationType: r.violationType,
+                              fineAmount: Number(amount),
+                              description: r.description,
+                              isActive: r.isActive,
+                            },
+                            config,
+                          )
+                          .then(() => {
+                            alert("Rule updated.");
+                            fetchGlobalData();
+                          })
+                          .catch(() => alert("Failed to update rule."));
+                      }}
+                      className="p-4 bg-primary-950 text-white rounded-[24px] shadow-xl hover:rotate-12 transition-transform">
                       <Edit3 size={20} />
                     </button>
                   </div>
@@ -830,7 +883,20 @@ const AdminDashboard = () => {
                     Monthly statistics
                   </p>
                 </div>
-                <button className="w-full py-5 bg-neutral-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all">
+                <button
+                  onClick={() => {
+                    const content =
+                      "Violation Trends Report\n\n" +
+                      (stats?.violationsByType
+                        ?.map((t) => `${t._id}: ${t.count}`)
+                        .join("\n") || "No data");
+                    const blob = new Blob([content], { type: "text/plain" });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `violation_trends_${new Date().toISOString().split("T")[0]}.txt`;
+                    link.click();
+                  }}
+                  className="w-full py-5 bg-neutral-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all">
                   Download PDF
                 </button>
               </div>
@@ -846,7 +912,16 @@ const AdminDashboard = () => {
                     Money collected summary
                   </p>
                 </div>
-                <button className="w-full py-5 bg-neutral-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all">
+                <button
+                  onClick={() => {
+                    const content = `Fine Collection Report\n\nTotal Revenue: NPR ${stats?.summary?.totalRevenue?.toLocaleString() || 0}\nOutstanding: NPR ${stats?.summary?.totalLiability?.toLocaleString() || 0}\nPaid Fines Count: ${allViolations.filter((v) => v.status === "Paid").length}`;
+                    const blob = new Blob([content], { type: "text/plain" });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `fine_collection_${new Date().toISOString().split("T")[0]}.txt`;
+                    link.click();
+                  }}
+                  className="w-full py-5 bg-neutral-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all">
                   Download PDF
                 </button>
               </div>
