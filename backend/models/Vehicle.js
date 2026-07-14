@@ -1,58 +1,77 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const vehicleSchema = new mongoose.Schema({
-  ownerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'VehicleOwner',
+const vehicleSchema = new mongoose.Schema(
+  {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
+      ref: "VehicleOwner",
+      default: null,
+    },
+    vehicleNumber: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    vehicleType: {
+      type: String,
+      enum: [
+        "Car",
+        "Van",
+        "Bus",
+        "Truck",
+        "Bike",
+        "Scooter",
+        "2-Wheeler",
+        "4-Wheeler",
+        "Other",
+      ],
+      default: "4-Wheeler",
+    },
+    brand: {
+      type: String,
+    },
+    model: {
+      type: String,
+    },
+    color: {
+      type: String,
+    },
+    engineNumber: {
+      type: String,
+      unique: true,
+    },
+    chassisNumber: {
+      type: String,
+      unique: true,
+    },
+    manufactureYear: {
+      type: Number,
+    },
+    registrationDate: {
+      type: Date,
+    },
+    insuranceStatus: {
+      type: String,
+      enum: ["Active", "Expired", "N/A"],
+      default: "Active",
+    },
+    taxStatus: {
+      type: String,
+      enum: ["Paid", "Unpaid", "N/A"],
+      default: "Paid",
+    },
+    registrationStatus: {
+      type: String,
+      enum: ["Registered", "Unregistered", "Pending"],
+      default: "Registered",
+    },
   },
-  vehicleNumber: {
-    type: String,
-    required: true,
-    unique: true,
+  {
+    timestamps: true,
   },
-  vehicleType: {
-    type: String,
-    enum: ['Car', 'Van', 'Bus', 'Truck', 'Bike', 'Scooter', '2-Wheeler', '4-Wheeler', 'Other'],
-    default: '4-Wheeler',
-  },
-  brand: {
-    type: String,
-  },
-  model: {
-    type: String,
-  },
-  color: {
-    type: String,
-  },
-  engineNumber: {
-    type: String,
-    unique: true,
-  },
-  chassisNumber: {
-    type: String,
-    unique: true,
-  },
-  manufactureYear: {
-    type: Number,
-  },
-  registrationDate: {
-    type: Date,
-  },
-  insuranceStatus: {
-    type: String,
-    enum: ['Active', 'Expired', 'N/A'],
-    default: 'Active',
-  },
-  taxStatus: {
-    type: String,
-    enum: ['Paid', 'Unpaid', 'N/A'],
-    default: 'Paid',
-  },
-}, {
-  timestamps: true,
-});
+);
 
-const Vehicle = mongoose.model('Vehicle', vehicleSchema);
+const Vehicle = mongoose.model("Vehicle", vehicleSchema);
 
 export default Vehicle;
