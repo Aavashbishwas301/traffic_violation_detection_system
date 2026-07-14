@@ -547,12 +547,34 @@ const AdminDashboard = () => {
                         <td className="px-10 py-6 text-right">
                           <div className="flex items-center justify-end space-x-2">
                             <button
+                              onClick={() => alert(`Edit violation: ${v._id}`)}
                               className="p-2 text-primary-900 hover:bg-slate-100 rounded-lg"
                               title="Edit">
                               <Edit3 size={16} />
                             </button>
                             {v.status === "Pending" && (
                               <button
+                                onClick={() => {
+                                  const config = {
+                                    headers: {
+                                      Authorization: `Bearer ${user?.token}`,
+                                    },
+                                  };
+                                  axios
+                                    .put(
+                                      `http://localhost:5000/api/violations/${v._id}`,
+                                      {
+                                        status: "Verified",
+                                        remarks: "Verified by Admin",
+                                      },
+                                      config,
+                                    )
+                                    .then(() => {
+                                      alert("Violation verified.");
+                                      fetchGlobalData();
+                                    })
+                                    .catch(() => alert("Verification failed."));
+                                }}
                                 className="p-2 text-accent-emerald hover:bg-accent-emerald/5 rounded-lg"
                                 title="Verify">
                                 <CheckCircle2 size={16} />
@@ -625,7 +647,31 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td className="px-10 py-6 text-right">
-                          <button className="bg-neutral-900 text-white px-4 py-1.5 rounded-lg text-[10px] font-black hover:bg-black transition-all">
+                          <button
+                            onClick={() => {
+                              const newStatus =
+                                v.status === "Paid" ? "Pending" : "Paid";
+                              const config = {
+                                headers: {
+                                  Authorization: `Bearer ${user?.token}`,
+                                },
+                              };
+                              axios
+                                .put(
+                                  `http://localhost:5000/api/violations/${v._id}`,
+                                  {
+                                    status: newStatus,
+                                    remarks: `Status changed to ${newStatus} by Admin`,
+                                  },
+                                  config,
+                                )
+                                .then(() => {
+                                  alert(`Status updated to ${newStatus}`);
+                                  fetchGlobalData();
+                                })
+                                .catch(() => alert("Status update failed."));
+                            }}
+                            className="bg-neutral-900 text-white px-4 py-1.5 rounded-lg text-[10px] font-black hover:bg-black transition-all">
                             CHANGE STATUS
                           </button>
                         </td>
