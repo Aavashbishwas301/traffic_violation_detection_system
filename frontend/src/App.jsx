@@ -71,6 +71,7 @@ function App() {
             <Route path="/users" element={<Dashboard />} />
             <Route path="/officers" element={<Dashboard />} />
             <Route path="/vehicle-mgmt" element={<Dashboard />} />
+            <Route path="/unregistered-vehicles" element={<Dashboard />} />
             <Route path="/violation-mgmt" element={<Dashboard />} />
             <Route path="/evidence-mgmt" element={<Dashboard />} />
             <Route path="/fines-mgmt" element={<Dashboard />} />

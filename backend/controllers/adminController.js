@@ -83,6 +83,51 @@ const getSystemStats = async (req, res) => {
   }
 };
 
+// @desc    Get unregistered vehicles (no owner assigned)
+// @route   GET /api/admin/vehicles/unregistered
+// @access  Private (Admin)
+const getUnregisteredVehicles = async (req, res) => {
+  try {
+    const vehicles = await Vehicle.find({ registrationStatus: "Unregistered" });
+    res.json(vehicles);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Assign owner to an unregistered vehicle
+// @route   PUT /api/admin/vehicles/:id/assign-owner
+// @access  Private (Admin)
+const assignVehicleOwner = async (req, res) => {
+  const { ownerId } = req.body;
+  if (!ownerId)
+    return res.status(400).json({ message: "Owner ID is required" });
+
+  try {
+    const owner = await VehicleOwner.findById(ownerId);
+    if (!owner) return res.status(404).json({ message: "Owner not found" });
+
+    const vehicle = await Vehicle.findByIdAndUpdate(
+      req.params.id,
+      { ownerId, registrationStatus: "Registered" },
+      { new: true },
+    );
+
+    if (vehicle) {
+      // Update all violations for this vehicle to link to the new owner
+      await Violation.updateMany(
+        { vehicleId: vehicle._id, ownerId: null },
+        { ownerId },
+      );
+      res.json({ message: "Owner assigned successfully", vehicle });
+    } else {
+      res.status(404).json({ message: "Vehicle not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 // @desc    Get all users (of a specific type or all)
 // @route   GET /api/admin/users
 // @access  Private (Admin)
@@ -383,4 +428,6 @@ export {
   getDetailedReports,
   updateOfficer,
   createComplaint,
+  getUnregisteredVehicles,
+  assignVehicleOwner,
 };

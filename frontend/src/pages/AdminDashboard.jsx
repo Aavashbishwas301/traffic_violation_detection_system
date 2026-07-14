@@ -54,6 +54,7 @@ const AdminDashboard = () => {
   const [rules, setRules] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [complaints, setComplaints] = useState([]);
+  const [unregisteredVehicles, setUnregisteredVehicles] = useState([]);
   const [broadcast, setBroadcast] = useState({ title: "", message: "" });
   const [officerForm, setOfficerForm] = useState({
     fullName: "",
