@@ -130,6 +130,16 @@ const AdminDashboard = () => {
       setNotifications(nRes.data || []);
       setReport(repRes.data);
       setComplaints(cRes.data || []);
+      // Fetch unregistered vehicles
+      try {
+        const uvRes = await axios.get(
+          "http://localhost:5000/api/admin/vehicles/unregistered",
+          config,
+        );
+        setUnregisteredVehicles(uvRes.data || []);
+      } catch (_) {
+        /* ignore */
+      }
       setError("");
     } catch (err) {
       setError("Connection Failure. Please try again.");
@@ -232,6 +242,7 @@ const AdminDashboard = () => {
       "/dashboard": "System Overview",
       "/officers": "Manage Police Officers",
       "/vehicle-mgmt": "Vehicle Registry",
+      "/unregistered-vehicles": "Unregistered Vehicles",
       "/violation-mgmt": "Violation Management",
       "/fines-mgmt": "Fine Management",
       "/financial-rules": "Traffic Rules",
@@ -939,6 +950,111 @@ const AdminDashboard = () => {
                     94.2%
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "/unregistered-vehicles":
+        return (
+          <div className="space-y-10 animate-fade-in pb-20">
+            <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
+              <div>
+                <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">
+                  Unregistered Vehicles.
+                </h3>
+                <p className="text-[10px] font-black text-neutral-300 uppercase mt-2 italic">
+                  AI-detected vehicles with no owner. Assign owners here.
+                </p>
+              </div>
+              <div className="bg-accent-crimson text-white px-4 py-2 rounded-xl font-black text-[10px] italic">
+                TOTAL: {unregisteredVehicles.length}
+              </div>
+            </div>
+            <div className="bg-white rounded-[56px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col flex-1 min-h-0">
+              <div className="overflow-y-auto custom-scrollbar">
+                <table className="w-full text-left">
+                  <thead className="bg-neutral-50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
+                    <tr>
+                      <th className="px-10 py-7">Plate No.</th>
+                      <th className="px-10 py-7">Type</th>
+                      <th className="px-10 py-7">Brand</th>
+                      <th className="px-10 py-7">Detected</th>
+                      <th className="px-10 py-7 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
+                    {unregisteredVehicles.map((v) => (
+                      <tr
+                        key={v._id}
+                        className="hover:bg-slate-50 transition-colors">
+                        <td className="px-10 py-6">
+                          <span className="bg-neutral-100 px-3 py-1 rounded-xl border border-neutral-200 font-mono text-primary-950 text-xs uppercase">
+                            {v.vehicleNumber}
+                          </span>
+                        </td>
+                        <td className="px-10 py-6 text-neutral-400">
+                          {v.vehicleType}
+                        </td>
+                        <td className="px-10 py-6 text-neutral-400">
+                          {v.brand}
+                        </td>
+                        <td className="px-10 py-6 text-neutral-300">
+                          {new Date(v.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-10 py-6 text-right">
+                          <button
+                            onClick={() => {
+                              const ownerEmail = prompt(
+                                "Enter owner email to assign:",
+                              );
+                              if (!ownerEmail) return;
+                              const owner = users.find(
+                                (u) =>
+                                  u.email?.toLowerCase() ===
+                                    ownerEmail.toLowerCase() &&
+                                  u.role === "VehicleOwner",
+                              );
+                              if (!owner) {
+                                alert(
+                                  "Owner not found. Make sure they are registered.",
+                                );
+                                return;
+                              }
+                              const config = {
+                                headers: {
+                                  Authorization: `Bearer ${user?.token}`,
+                                },
+                              };
+                              axios
+                                .put(
+                                  `http://localhost:5000/api/admin/vehicles/${v._id}/assign-owner`,
+                                  { ownerId: owner._id },
+                                  config,
+                                )
+                                .then(() => {
+                                  alert("Owner assigned!");
+                                  fetchGlobalData();
+                                })
+                                .catch(() => alert("Failed to assign."));
+                            }}
+                            className="bg-primary-950 text-white px-4 py-1.5 rounded-lg text-[10px] font-black hover:bg-black transition-all">
+                            ASSIGN OWNER
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {unregisteredVehicles.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="px-10 py-12 text-center text-neutral-300 italic">
+                          No unregistered vehicles found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
