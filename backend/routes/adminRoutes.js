@@ -20,6 +20,11 @@ import {
 } from "../controllers/adminController.js";
 import { updateViolation } from "../controllers/violationController.js";
 import { protect, admin, police } from "../middleware/authMiddleware.js";
+import {
+  broadcastValidation,
+  ruleValidation,
+  complaintValidation,
+} from "../middleware/validationMiddleware.js";
 
 const router = express.Router();
 
@@ -40,14 +45,20 @@ router
 
 // Rules and Reports
 router.get("/rules", protect, police, getRules);
-router.post("/rules", protect, admin, updateRule);
+router.post("/rules", protect, admin, ruleValidation, updateRule);
 router.get("/report", protect, admin, generateGlobalReport);
-router.post("/broadcast", protect, admin, broadcastMessage);
+router.post(
+  "/broadcast",
+  protect,
+  admin,
+  broadcastValidation,
+  broadcastMessage,
+);
 router.get("/notifications", protect, getNotifications);
 
 // Complaints Management
 router.get("/complaints", protect, admin, getComplaints);
-router.post("/complaints", protect, createComplaint); // Owners can create
+router.post("/complaints", protect, complaintValidation, createComplaint);
 router.put("/complaints/:id", protect, admin, respondToComplaint);
 
 // Officer Management
