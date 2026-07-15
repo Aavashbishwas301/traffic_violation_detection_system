@@ -211,12 +211,18 @@ const manualViolation = async (req, res) => {
 // @access  Private (Police/Admin)
 const getViolations = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const total = await Violation.countDocuments();
     const violations = await Violation.find()
       .populate("vehicleId")
       .populate("ownerId", "fullName email phone")
       .populate("ruleId")
       .sort({ createdAt: -1 })
-      .limit(100);
+      .skip(skip)
+      .limit(limit);
 
     // Fetch fine and evidence for each violation
     const results = await Promise.all(
@@ -232,7 +238,15 @@ const getViolations = async (req, res) => {
       }),
     );
 
-    res.json(results);
+    res.json({
+      violations: results,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("getViolations Error:", error);
     res.status(500).json({ message: "Server Error" });

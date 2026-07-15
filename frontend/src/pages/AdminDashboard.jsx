@@ -124,7 +124,10 @@ const AdminDashboard = () => {
         ]);
       setStats(sRes.data);
       setUsers(uRes.data || []);
-      setAllViolations(vRes.data || []);
+      // Handle both old array format and new paginated format
+      setAllViolations(
+        Array.isArray(vRes.data) ? vRes.data : vRes.data.violations || [],
+      );
       setVehicles(vhRes.data || []);
       setRules(rRes.data || []);
       setNotifications(nRes.data || []);

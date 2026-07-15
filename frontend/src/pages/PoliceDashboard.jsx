@@ -72,7 +72,10 @@ const PoliceDashboard = () => {
         axios.get("http://localhost:5000/api/admin/rules", config),
         axios.get("http://localhost:5000/api/users/profile", config),
       ]);
-      setViolations(vRes.data);
+      // Handle both old array format and new paginated format
+      setViolations(
+        Array.isArray(vRes.data) ? vRes.data : vRes.data.violations || [],
+      );
       setStats(sRes.data);
       setRules(rRes.data || []);
       setProfile(pRes.data);
