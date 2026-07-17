@@ -3,6 +3,7 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
+import api from "../utils/axios.js";
 import {
   Bell,
   Camera,
@@ -67,11 +68,7 @@ const OwnerDashboard = () => {
 
   const fetchViolations = async () => {
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      const { data } = await axios.get(
-        "http://localhost:5000/api/violations/my",
-        config,
-      );
+      const { data } = await api.get("/api/violations/my");
       setViolations(data);
     } catch (err) {
       console.error("Violation fetch failed");
@@ -80,11 +77,7 @@ const OwnerDashboard = () => {
 
   const fetchNotifications = async () => {
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      const { data } = await axios.get(
-        "http://localhost:5000/api/admin/notifications",
-        config,
-      );
+      const { data } = await api.get("/api/admin/notifications");
       setNotifications(data);
     } catch (err) {
       console.error("Notification fetch failed");
@@ -93,11 +86,7 @@ const OwnerDashboard = () => {
 
   const fetchVehicles = async () => {
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      const { data } = await axios.get(
-        "http://localhost:5000/api/vehicles/my",
-        config,
-      );
+      const { data } = await api.get("/api/vehicles/my");
       setVehicles(data);
     } catch (err) {
       console.error("Vehicle fetch failed");
@@ -120,22 +109,17 @@ const OwnerDashboard = () => {
 
   const handlePay = async (id, method, fineId) => {
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
       const targetId = fineId || id;
 
       if (method === "khalti") {
-        const { data } = await axios.post(
-          "http://localhost:5000/api/payments/khalti/initiate",
-          { fineId: targetId },
-          config,
-        );
+        const { data } = await api.post("/api/payments/khalti/initiate", {
+          fineId: targetId,
+        });
         window.location.href = data.url;
       } else if (method === "esewa") {
-        const { data } = await axios.post(
-          "http://localhost:5000/api/payments/esewa/initiate",
-          { fineId: targetId },
-          config,
-        );
+        const { data } = await api.post("/api/payments/esewa/initiate", {
+          fineId: targetId,
+        });
 
         const form = document.createElement("form");
         form.setAttribute("method", "POST");
@@ -152,11 +136,7 @@ const OwnerDashboard = () => {
         document.body.appendChild(form);
         form.submit();
       } else {
-        await axios.post(
-          `http://localhost:5000/api/payments/${targetId}/pay`,
-          {},
-          config,
-        );
+        await api.post(`/api/payments/${targetId}/pay`, {});
         alert("Payment Successful");
         fetchViolations();
       }
@@ -169,12 +149,7 @@ const OwnerDashboard = () => {
   const updateProfile = async (e) => {
     e.preventDefault();
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      await axios.put(
-        "http://localhost:5000/api/users/profile",
-        { password: newPassword },
-        config,
-      );
+      await api.put("/api/users/profile", { password: newPassword });
       setProfileMsg("Password Updated.");
       setNewPassword("");
     } catch (err) {
@@ -184,8 +159,10 @@ const OwnerDashboard = () => {
 
   const viewEvidence = (path) => {
     if (!path) return alert("No photo found.");
-    const url = `http://localhost:5000/${path.replace(/\\/g, "/")}`;
-    window.open(url, "_blank");
+    window.open(
+      `${api.defaults.baseURL}/${path.replace(/\\/g, "/")}`,
+      "_blank",
+    );
   };
 
   const handleRegisterVehicle = async (e) => {
@@ -194,8 +171,7 @@ const OwnerDashboard = () => {
     setRegLoading(true);
     setRegMsg("");
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      await axios.post("http://localhost:5000/api/vehicles", regForm, config);
+      await api.post("/api/vehicles", regForm);
       setRegMsg("Vehicle registered successfully!");
       setRegForm({
         vehicleNumber: "",
@@ -220,15 +196,10 @@ const OwnerDashboard = () => {
     if (!complaintForm.violationId || !complaintForm.message)
       return alert("Select violation and enter details.");
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      await axios.post(
-        "http://localhost:5000/api/admin/complaints",
-        {
-          violationId: complaintForm.violationId,
-          complaintMessage: complaintForm.message,
-        },
-        config,
-      );
+      await api.post("/api/admin/complaints", {
+        violationId: complaintForm.violationId,
+        complaintMessage: complaintForm.message,
+      });
       alert("Complaint sent successfully.");
       setComplaintForm({ violationId: "", message: "" });
     } catch (err) {
@@ -348,7 +319,7 @@ const OwnerDashboard = () => {
                     onClick={() => viewEvidence(v.imageUrl || v.evidenceUrl)}>
                     <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden">
                       <img
-                        src={`http://localhost:5000/${(v.imageUrl || v.evidenceUrl).replace(/\\/g, "/")}`}
+                        src={`${api.defaults.baseURL}/${(v.imageUrl || v.evidenceUrl).replace(/\\/g, "/")}`}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                       />
                     </div>

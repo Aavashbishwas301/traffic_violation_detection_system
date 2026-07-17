@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import api from "../utils/axios";
 import { useAuth } from "../context/AuthContext";
 import Layout from "../components/Layout";
-import { CheckCircle, XCircle, Loader2, Cpu, ArrowRight } from "lucide-react";
+import { CheckCircle, XCircle, Cpu, ArrowRight } from "lucide-react";
 
 const PaymentStatus = () => {
   const [searchParams] = useSearchParams();
@@ -19,19 +19,15 @@ const PaymentStatus = () => {
       const pidx = searchParams.get("pidx");
       const esewaData = searchParams.get("data");
       const esewaStatus = searchParams.get("esewa_status");
-      // Purchase order ID from Khalti is actually the fineId
       const fineId = searchParams.get("purchase_order_id");
 
       try {
-        const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-
         if (pidx) {
-          // Khalti callback: frontend receives pidx and calls backend to verify
-          const { data } = await axios.post(
-            "http://localhost:5000/api/payments/khalti/verify",
-            { pidx, fineId },
-            config,
-          );
+          // Khalti callback — verify with backend
+          const { data } = await api.post("/api/payments/khalti/verify", {
+            pidx,
+            fineId,
+          });
           if (data.success) {
             setStatus("success");
             setMessage("GRID SETTLEMENT VERIFIED. LIABILITY ERASED.");
@@ -39,22 +35,21 @@ const PaymentStatus = () => {
             setStatus("failure");
             setMessage("KHALTI PROTOCOL REJECTED. AUTHENTICATION FAILURE.");
           }
-        } else if (esewaData) {
-          // eSewa callback (old flow - backend verify endpoint called directly by eSewa)
-          const { data } = await axios.get(
-            `http://localhost:5000/api/payments/esewa/verify?data=${esewaData}`,
-            config,
-          );
-          if (data.success) {
+        } else if (esewaStatus) {
+          // eSewa: backend already verified and redirected with status
+          if (esewaStatus === "success") {
             setStatus("success");
             setMessage("GRID SETTLEMENT VERIFIED. LIABILITY ERASED.");
           } else {
             setStatus("failure");
             setMessage("ESEWA PROTOCOL REJECTED. AUTHENTICATION FAILURE.");
           }
-        } else if (esewaStatus) {
-          // eSewa callback (new flow - backend redirected here with status)
-          if (esewaStatus === "success") {
+        } else if (esewaData) {
+          // eSewa legacy callback (direct from eSewa)
+          const { data } = await api.get(
+            `/api/payments/esewa/verify?data=${esewaData}`,
+          );
+          if (data.success) {
             setStatus("success");
             setMessage("GRID SETTLEMENT VERIFIED. LIABILITY ERASED.");
           } else {
