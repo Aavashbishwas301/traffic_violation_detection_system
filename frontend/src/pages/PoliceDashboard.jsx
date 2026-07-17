@@ -3,6 +3,7 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
+import api from "../utils/axios.js";
 import {
   Camera,
   Shield,
@@ -65,12 +66,11 @@ const PoliceDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
       const [vRes, sRes, rRes, pRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/violations", config),
-        axios.get("http://localhost:5000/api/admin/stats", config),
-        axios.get("http://localhost:5000/api/admin/rules", config),
-        axios.get("http://localhost:5000/api/users/profile", config),
+        api.get("/api/violations"),
+        api.get("/api/admin/stats"),
+        api.get("/api/admin/rules"),
+        api.get("/api/users/profile"),
       ]);
       // Handle both old array format and new paginated format
       setViolations(
@@ -94,11 +94,7 @@ const PoliceDashboard = () => {
     e.preventDefault();
     if (!searchQuery) return;
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      const { data } = await axios.get(
-        `http://localhost:5000/api/vehicles/${searchQuery}`,
-        config,
-      );
+      const { data } = await api.get(`/api/vehicles/${searchQuery}`);
       setSearchResult(data);
     } catch (err) {
       alert("Vehicle not found.");
@@ -115,17 +111,9 @@ const PoliceDashboard = () => {
     formData.append("location", detectMeta.location);
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      };
-      await axios.post(
-        "http://localhost:5000/api/violations/upload",
-        formData,
-        config,
-      );
+      await api.post("/api/violations/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       alert("AI Scan complete. Results added to records.");
       setDetectFile(null);
       fetchData();
@@ -149,17 +137,9 @@ const PoliceDashboard = () => {
     formData.append("remarks", manualEntry.remarks);
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      };
-      await axios.post(
-        "http://localhost:5000/api/violations/manual",
-        formData,
-        config,
-      );
+      await api.post("/api/violations/manual", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       alert("Violation recorded manually.");
       setManualEntry({
         vehicleNumber: "",
@@ -178,12 +158,7 @@ const PoliceDashboard = () => {
 
   const updateStatus = async (id, status, remarks) => {
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      await axios.put(
-        `http://localhost:5000/api/violations/${id}`,
-        { status, remarks },
-        config,
-      );
+      await api.put(`/api/violations/${id}`, { status, remarks });
       fetchData();
     } catch (err) {
       alert("Status update failed.");
@@ -193,8 +168,7 @@ const PoliceDashboard = () => {
   const deleteViolation = async (id) => {
     if (!window.confirm("Are you sure you want to delete this?")) return;
     try {
-      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      await axios.delete(`http://localhost:5000/api/violations/${id}`, config);
+      await api.delete(`/api/violations/${id}`);
       fetchData();
     } catch (err) {
       alert("Deletion failed.");
@@ -203,7 +177,10 @@ const PoliceDashboard = () => {
 
   const viewEvidence = (path) => {
     if (!path) return alert("No evidence found.");
-    window.open(`http://localhost:5000/${path.replace(/\\/g, "/")}`, "_blank");
+    window.open(
+      `${api.defaults.baseURL}/${path.replace(/\\/g, "/")}`,
+      "_blank",
+    );
   };
 
   if (loading)
