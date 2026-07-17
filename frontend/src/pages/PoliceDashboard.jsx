@@ -734,7 +734,7 @@ const PoliceDashboard = () => {
                   <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden">
                     {v.imageUrl || v.evidenceUrl ? (
                       <img
-                        src={`http://localhost:5000/${(v.imageUrl || v.evidenceUrl).replace(/\\/g, "/")}`}
+                        src={`${api.defaults.baseURL}/${(v.imageUrl || v.evidenceUrl).replace(/\\/g, "/")}`}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                       />
                     ) : (
