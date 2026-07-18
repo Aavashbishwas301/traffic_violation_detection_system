@@ -65,6 +65,7 @@ const OwnerDashboard = () => {
   });
   const [regMsg, setRegMsg] = useState("");
   const [regLoading, setRegLoading] = useState(false);
+  const [payLoading, setPayLoading] = useState({});
 
   const fetchViolations = async () => {
     try {
@@ -108,6 +109,8 @@ const OwnerDashboard = () => {
   }, [user, location.pathname]);
 
   const handlePay = async (id, method, fineId) => {
+    const payKey = `${id}-${method}`;
+    setPayLoading((prev) => ({ ...prev, [payKey]: true }));
     try {
       const targetId = fineId || id;
 
@@ -143,6 +146,8 @@ const OwnerDashboard = () => {
     } catch (err) {
       console.error(err);
       alert("Payment failed.");
+    } finally {
+      setPayLoading((prev) => ({ ...prev, [payKey]: false }));
     }
   };
 
@@ -266,22 +271,31 @@ const OwnerDashboard = () => {
                             onClick={() =>
                               handlePay(v._id, "esewa", v.fine?._id)
                             }
-                            className="bg-[#60bb46] text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase flex items-center gap-1.5 hover:opacity-90 transition-all">
-                            Pay with eSewa
+                            disabled={payLoading[`${v._id}-esewa`]}
+                            className="bg-[#60bb46] text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase flex items-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50">
+                            {payLoading[`${v._id}-esewa`]
+                              ? "Processing..."
+                              : "Pay with eSewa"}
                           </button>
                           <button
                             onClick={() =>
                               handlePay(v._id, "khalti", v.fine?._id)
                             }
-                            className="bg-[#5d2e8e] text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase flex items-center gap-1.5 hover:opacity-90 transition-all">
-                            Pay with Khalti
+                            disabled={payLoading[`${v._id}-khalti`]}
+                            className="bg-[#5d2e8e] text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase flex items-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50">
+                            {payLoading[`${v._id}-khalti`]
+                              ? "Processing..."
+                              : "Pay with Khalti"}
                           </button>
                           <button
                             onClick={() =>
                               handlePay(v._id, "manual", v.fine?._id)
                             }
-                            className="bg-neutral-100 text-neutral-500 px-3 py-1.5 rounded-lg font-black text-[10px] uppercase hover:bg-neutral-200 transition-all">
-                            Simulate
+                            disabled={payLoading[`${v._id}-manual`]}
+                            className="bg-neutral-100 text-neutral-500 px-3 py-1.5 rounded-lg font-black text-[10px] uppercase hover:bg-neutral-200 transition-all disabled:opacity-50">
+                            {payLoading[`${v._id}-manual`]
+                              ? "Processing..."
+                              : "Simulate"}
                           </button>
                         </div>
                       )}
