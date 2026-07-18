@@ -142,12 +142,12 @@ const OwnerDashboard = () => {
         form.submit();
       } else {
         await api.post(`/api/payments/${targetId}/pay`, {});
-        alert("Payment Successful");
+        addToast("Payment Successful", "success");
         fetchViolations();
       }
     } catch (err) {
       console.error(err);
-      alert("Payment failed.");
+      addToast("Payment failed. Please try again.", "error");
     } finally {
       setPayLoading((prev) => ({ ...prev, [payKey]: false }));
     }
@@ -165,7 +165,7 @@ const OwnerDashboard = () => {
   };
 
   const viewEvidence = (path) => {
-    if (!path) return alert("No photo found.");
+    if (!path) return addToast("No photo found.", "warning");
     window.open(
       `${api.defaults.baseURL}/${path.replace(/\\/g, "/")}`,
       "_blank",
@@ -174,11 +174,13 @@ const OwnerDashboard = () => {
 
   const handleRegisterVehicle = async (e) => {
     e.preventDefault();
-    if (!regForm.vehicleNumber) return alert("Vehicle number is required.");
+    if (!regForm.vehicleNumber)
+      return addToast("Vehicle number is required.", "warning");
     setRegLoading(true);
     setRegMsg("");
     try {
       await api.post("/api/vehicles", regForm);
+      addToast("Vehicle registered successfully!", "success");
       setRegMsg("Vehicle registered successfully!");
       setRegForm({
         vehicleNumber: "",
@@ -201,16 +203,16 @@ const OwnerDashboard = () => {
   const handleAppeal = async (e) => {
     e.preventDefault();
     if (!complaintForm.violationId || !complaintForm.message)
-      return alert("Select violation and enter details.");
+      return addToast("Select violation and enter details.", "warning");
     try {
       await api.post("/api/admin/complaints", {
         violationId: complaintForm.violationId,
         complaintMessage: complaintForm.message,
       });
-      alert("Complaint sent successfully.");
+      addToast("Complaint sent successfully.", "success");
       setComplaintForm({ violationId: "", message: "" });
     } catch (err) {
-      alert("Submission failed.");
+      addToast("Submission failed. Please try again.", "error");
     }
   };
 
