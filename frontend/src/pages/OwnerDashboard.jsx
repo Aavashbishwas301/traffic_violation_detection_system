@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
 import api from "../utils/axios.js";
+import { useToast } from "../context/ToastContext.jsx";
 import {
   Bell,
   Camera,
@@ -66,6 +67,7 @@ const OwnerDashboard = () => {
   const [regMsg, setRegMsg] = useState("");
   const [regLoading, setRegLoading] = useState(false);
   const [payLoading, setPayLoading] = useState({});
+  const { addToast } = useToast();
 
   const fetchViolations = async () => {
     try {
