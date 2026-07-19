@@ -3,6 +3,7 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
+import { useToast } from "../context/ToastContext.jsx";
 import {
   Users,
   Car,
@@ -68,6 +69,7 @@ const AdminDashboard = () => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { addToast } = useToast();
 
   const { user } = useAuth();
   const location = useLocation();
@@ -83,14 +85,14 @@ const AdminDashboard = () => {
           officerForm,
           config,
         );
-        alert("Officer updated.");
+        addToast("Officer updated.", "success");
       } else {
         await axios.post(
           "http://localhost:5000/api/users",
           officerForm,
           config,
         );
-        alert("Officer registered.");
+        addToast("Officer registered.", "success");
       }
       setShowModal(false);
       setOfficerForm({
@@ -103,7 +105,7 @@ const AdminDashboard = () => {
       setEditingId(null);
       fetchGlobalData();
     } catch (err) {
-      alert(err.response?.data?.message || "Operation failed.");
+      addToast(err.response?.data?.message || "Operation failed.", "error");
     }
   };
 
@@ -158,7 +160,7 @@ const AdminDashboard = () => {
   const sendBroadcast = async (e) => {
     e.preventDefault();
     if (!broadcast.title || !broadcast.message)
-      return alert("Fill all fields.");
+      return addToast("Fill all fields.", "warning");
     try {
       const config = { headers: { Authorization: `Bearer ${user?.token}` } };
       await axios.post(
@@ -166,10 +168,10 @@ const AdminDashboard = () => {
         broadcast,
         config,
       );
-      alert("Broadcast sent to all users.");
+      addToast("Broadcast sent to all users.", "success");
       setBroadcast({ title: "", message: "" });
     } catch (err) {
-      alert("Broadcast failed.");
+      addToast("Broadcast failed.", "error");
     }
   };
 
@@ -181,10 +183,10 @@ const AdminDashboard = () => {
         { status, adminResponse: responseText },
         config,
       );
-      alert("Complaint updated.");
+      addToast("Complaint updated.", "success");
       fetchGlobalData();
     } catch (err) {
-      alert("Update failed.");
+      addToast("Update failed.", "error");
     }
   };
 
@@ -199,7 +201,7 @@ const AdminDashboard = () => {
       await axios.delete(url, config);
       fetchGlobalData();
     } catch (err) {
-      alert("Failed to delete.");
+      addToast("Failed to delete.", "error");
     }
   };
 
@@ -562,7 +564,12 @@ const AdminDashboard = () => {
                         <td className="px-10 py-6 text-right">
                           <div className="flex items-center justify-end space-x-2">
                             <button
-                              onClick={() => alert(`Edit violation: ${v._id}`)}
+                              onClick={() =>
+                                addToast(
+                                  `Edit mode for violation: ${v._id}`,
+                                  "info",
+                                )
+                              }
                               className="p-2 text-primary-900 hover:bg-slate-100 rounded-lg"
                               title="Edit">
                               <Edit3 size={16} />
@@ -585,10 +592,15 @@ const AdminDashboard = () => {
                                       config,
                                     )
                                     .then(() => {
-                                      alert("Violation verified.");
+                                      addToast(
+                                        "Violation verified.",
+                                        "success",
+                                      );
                                       fetchGlobalData();
                                     })
-                                    .catch(() => alert("Verification failed."));
+                                    .catch(() =>
+                                      addToast("Verification failed.", "error"),
+                                    );
                                 }}
                                 className="p-2 text-accent-emerald hover:bg-accent-emerald/5 rounded-lg"
                                 title="Verify">
@@ -681,10 +693,15 @@ const AdminDashboard = () => {
                                   config,
                                 )
                                 .then(() => {
-                                  alert(`Status updated to ${newStatus}`);
+                                  addToast(
+                                    `Status updated to ${newStatus}`,
+                                    "success",
+                                  );
                                   fetchGlobalData();
                                 })
-                                .catch(() => alert("Status update failed."));
+                                .catch(() =>
+                                  addToast("Status update failed.", "error"),
+                                );
                             }}
                             className="bg-neutral-900 text-white px-4 py-1.5 rounded-lg text-[10px] font-black hover:bg-black transition-all">
                             CHANGE STATUS
@@ -733,10 +750,10 @@ const AdminDashboard = () => {
                       config,
                     )
                     .then(() => {
-                      alert("Rule added.");
+                      addToast("Rule added.", "success");
                       fetchGlobalData();
                     })
-                    .catch(() => alert("Failed to add rule."));
+                    .catch(() => addToast("Failed to add rule.", "error"));
                 }}
                 className="bg-primary-950 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center space-x-2 shadow-2xl hover:bg-black transition-all">
                 <Plus size={16} /> <span>Add New Rule</span>
@@ -791,10 +808,12 @@ const AdminDashboard = () => {
                             config,
                           )
                           .then(() => {
-                            alert("Rule updated.");
+                            addToast("Rule updated.", "success");
                             fetchGlobalData();
                           })
-                          .catch(() => alert("Failed to update rule."));
+                          .catch(() =>
+                            addToast("Failed to update rule.", "error"),
+                          );
                       }}
                       className="p-4 bg-primary-950 text-white rounded-[24px] shadow-xl hover:rotate-12 transition-transform">
                       <Edit3 size={20} />
@@ -1019,8 +1038,9 @@ const AdminDashboard = () => {
                                   u.role === "VehicleOwner",
                               );
                               if (!owner) {
-                                alert(
+                                addToast(
                                   "Owner not found. Make sure they are registered.",
+                                  "error",
                                 );
                                 return;
                               }
@@ -1036,10 +1056,12 @@ const AdminDashboard = () => {
                                   config,
                                 )
                                 .then(() => {
-                                  alert("Owner assigned!");
+                                  addToast("Owner assigned!", "success");
                                   fetchGlobalData();
                                 })
-                                .catch(() => alert("Failed to assign."));
+                                .catch(() =>
+                                  addToast("Failed to assign.", "error"),
+                                );
                             }}
                             className="bg-primary-950 text-white px-4 py-1.5 rounded-lg text-[10px] font-black hover:bg-black transition-all">
                             ASSIGN OWNER
@@ -1141,7 +1163,7 @@ const AdminDashboard = () => {
                   </p>
                 </div>
                 <button
-                  onClick={() => alert("Password update requested.")}
+                  onClick={() => addToast("Password update requested.", "info")}
                   className="w-full py-5 bg-primary-950 text-white rounded-2xl uppercase font-black text-xs tracking-[0.5em] shadow-2xl">
                   Change Password
                 </button>

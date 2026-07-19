@@ -1,17 +1,31 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ultralytics import YOLO
 import cv2
 import numpy as np
 import io
+import os
+import tempfile
 from PIL import Image
 import easyocr
 import re
 
 app = FastAPI()
+security = HTTPBearer(auto_error=False)
 
 # Global Model Cache
 model = YOLO('yolov8n.pt') 
 reader = easyocr.Reader(['en'], gpu=False) # Set gpu=True if you have a CUDA GPU
+
+# API Key Authentication
+AI_API_KEY = os.getenv("AI_API_KEY", "tvds-ai-key-dev")
+
+async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Missing API key")
+    if credentials.credentials != AI_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return credentials
 
 def extract_plate_number(img, bbox):
     """
@@ -127,16 +141,10 @@ def check_helmet(img, rider_bbox):
     # If more than 15% of the head is "skin" colored, it's likely a bare head/no helmet
     return skin_ratio < 0.15
 
-@app.post("/detect")
-async def detect_violations(file: UploadFile = File(...)):
+def process_image(img):
+    """Run detection on a single image frame and return results."""
     start_time = cv2.getTickCount()
     
-    # Efficient image reading
-    contents = await file.read()
-    nparr = np.frombuffer(contents, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-    # Optimization: Inference with higher threshold to reduce noise
     results = model(img, conf=0.25, verbose=False)
     
     detections = []
@@ -218,6 +226,13 @@ async def detect_violations(file: UploadFile = File(...)):
     end_time = cv2.getTickCount()
     latency = (end_time - start_time) / cv2.getTickFrequency() * 1000
 
+    # Calculate real accuracy score from detection confidences
+    if detections:
+        avg_confidence = sum(d['confidence'] for d in detections) / len(detections)
+        accuracy_score = round(avg_confidence * 100, 1)
+    else:
+        accuracy_score = 0.0
+
     return {
         "detections": detections,
         "violations": violations,
@@ -229,9 +244,110 @@ async def detect_violations(file: UploadFile = File(...)):
             "latency_ms": round(latency, 2),
             "model_version": "2.0.1",
             "threads": 8,
-            "accuracy_score": 0.94
+            "accuracy_score": accuracy_score,
+            "detection_count": len(detections)
         }
     }
+
+@app.post("/detect")
+async def detect_violations(
+    file: UploadFile = File(...),
+    auth: HTTPAuthorizationCredentials = Depends(verify_api_key)
+):
+    # Read file bytes
+    contents = await file.read()
+    
+    # Check if it's a video file by extension
+    filename = file.filename.lower() if file.filename else ""
+    video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm']
+    is_video = any(filename.endswith(ext) for ext in video_extensions)
+    
+    if is_video:
+        # Video processing: extract frames and run detection on each
+        temp_path = None
+        try:
+            # Write to temp file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp:
+                tmp.write(contents)
+                temp_path = tmp.name
+            
+            cap = cv2.VideoCapture(temp_path)
+            if not cap.isOpened():
+                raise HTTPException(status_code=400, detail="Could not open video file")
+            
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            
+            # Sample frames at 1 FPS (or every frame if video is short)
+            sample_interval = max(1, int(fps))
+            
+            all_results = []
+            frame_count = 0
+            processed_count = 0
+            
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                if frame_count % sample_interval == 0:
+                    result = process_image(frame)
+                    all_results.append(result)
+                    processed_count += 1
+                
+                frame_count += 1
+            
+            cap.release()
+            
+            # Aggregate results across all frames
+            aggregated_violations = {}
+            aggregated_detections = []
+            total_accuracy = 0
+            
+            for result in all_results:
+                for v in result['violations']:
+                    key = v['type']
+                    if key not in aggregated_violations:
+                        aggregated_violations[key] = {"type": key, "confidence": v['confidence'], "frames": 0}
+                    aggregated_violations[key]["frames"] += 1
+                    aggregated_violations[key]["confidence"] = max(aggregated_violations[key]["confidence"], v['confidence'])
+                
+                aggregated_detections.extend(result['detections'])
+                total_accuracy += result['meta']['accuracy_score']
+            
+            avg_accuracy = round(total_accuracy / len(all_results), 1) if all_results else 0
+            
+            return {
+                "detections": aggregated_detections,
+                "violations": list(aggregated_violations.values()),
+                "vehicle_number": all_results[-1]['vehicle_number'] if all_results else "Unknown",
+                "vehicle_type": all_results[-1]['vehicle_type'] if all_results else "Other",
+                "light_color": all_results[-1]['light_color'] if all_results else "Unknown",
+                "meta": {
+                    "engine": "YOLOv8-N + EasyOCR",
+                    "latency_ms": round(sum(r['meta']['latency_ms'] for r in all_results) / len(all_results), 2) if all_results else 0,
+                    "model_version": "2.0.1",
+                    "threads": 8,
+                    "accuracy_score": avg_accuracy,
+                    "detection_count": len(aggregated_detections),
+                    "video_info": {
+                        "total_frames": total_frames,
+                        "processed_frames": processed_count,
+                        "fps": round(fps, 2)
+                    }
+                }
+            }
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                os.unlink(temp_path)
+    else:
+        # Image processing (original behavior)
+        nparr = np.frombuffer(contents, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img is None:
+            raise HTTPException(status_code=400, detail="Could not decode image file")
+        
+        return process_image(img)
 
 if __name__ == "__main__":
     import uvicorn

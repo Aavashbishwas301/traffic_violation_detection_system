@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
 import api from "../utils/axios.js";
+import { useToast } from "../context/ToastContext.jsx";
 import {
   Camera,
   Shield,
@@ -63,6 +64,7 @@ const PoliceDashboard = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
   const fetchData = async () => {
     try {
@@ -97,14 +99,14 @@ const PoliceDashboard = () => {
       const { data } = await api.get(`/api/vehicles/${searchQuery}`);
       setSearchResult(data);
     } catch (err) {
-      alert("Vehicle not found.");
+      addToast("Vehicle not found.", "error");
       setSearchResult(null);
     }
   };
 
   const handleAIDetect = async (e) => {
     e.preventDefault();
-    if (!detectFile) return alert("Please select a photo/video.");
+    if (!detectFile) return addToast("Please select a photo/video.", "warning");
     setUploading(true);
     const formData = new FormData();
     formData.append("evidence", detectFile);
@@ -114,11 +116,11 @@ const PoliceDashboard = () => {
       await api.post("/api/violations/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("AI Scan complete. Results added to records.");
+      addToast("AI Scan complete. Results added to records.", "success");
       setDetectFile(null);
       fetchData();
     } catch (err) {
-      alert("Scan failed.");
+      addToast("Scan failed.", "error");
     } finally {
       setUploading(false);
     }
@@ -127,7 +129,10 @@ const PoliceDashboard = () => {
   const handleManualEntry = async (e) => {
     e.preventDefault();
     if (!manualFile)
-      return alert("Evidence image is required for manual entry.");
+      return addToast(
+        "Evidence image is required for manual entry.",
+        "warning",
+      );
     setUploading(true);
     const formData = new FormData();
     formData.append("evidence", manualFile);
@@ -140,7 +145,7 @@ const PoliceDashboard = () => {
       await api.post("/api/violations/manual", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("Violation recorded manually.");
+      addToast("Violation recorded manually.", "success");
       setManualEntry({
         vehicleNumber: "",
         violationType: "",
@@ -150,7 +155,7 @@ const PoliceDashboard = () => {
       setManualFile(null);
       fetchData();
     } catch (err) {
-      alert("Manual entry failed.");
+      addToast("Manual entry failed.", "error");
     } finally {
       setUploading(false);
     }
@@ -161,7 +166,7 @@ const PoliceDashboard = () => {
       await api.put(`/api/violations/${id}`, { status, remarks });
       fetchData();
     } catch (err) {
-      alert("Status update failed.");
+      addToast("Status update failed.", "error");
     }
   };
 
@@ -171,12 +176,12 @@ const PoliceDashboard = () => {
       await api.delete(`/api/violations/${id}`);
       fetchData();
     } catch (err) {
-      alert("Deletion failed.");
+      addToast("Deletion failed.", "error");
     }
   };
 
   const viewEvidence = (path) => {
-    if (!path) return alert("No evidence found.");
+    if (!path) return addToast("No evidence found.", "warning");
     window.open(
       `${api.defaults.baseURL}/${path.replace(/\\/g, "/")}`,
       "_blank",
@@ -634,8 +639,9 @@ const PoliceDashboard = () => {
                           .toISOString()
                           .split("T")[0] === today,
                     );
-                    alert(
+                    addToast(
                       `Records for today: ${filtered.length} violations found.`,
+                      "info",
                     );
                   }}
                   className="px-5 py-2.5 bg-neutral-100 rounded-xl text-[9px] font-black uppercase hover:bg-neutral-200 transition-all">
@@ -942,7 +948,7 @@ const PoliceDashboard = () => {
                   </p>
                 </div>
                 <button
-                  onClick={() => alert("Password update requested.")}
+                  onClick={() => addToast("Password update requested.", "info")}
                   className="w-full py-5 bg-primary-950 text-white rounded-2xl uppercase font-black text-xs tracking-[0.5em] shadow-2xl">
                   Change Password
                 </button>

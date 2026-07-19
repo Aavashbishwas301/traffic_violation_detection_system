@@ -34,6 +34,7 @@ const uploadViolation = async (req, res) => {
       {
         headers: {
           ...formData.getHeaders(),
+          Authorization: `Bearer ${process.env.AI_API_KEY || "tvds-ai-key-dev"}`,
         },
       },
     );
