@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: tvds-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - tvds-network
+
+  # AI Detection Service
+  ai-service:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: tvds-ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - AI_API_KEY=${AI_API_KEY:-tvds-ai-key-dev}
+    volumes:
+      - ./ai/yolov8n.pt:/app/yolov8n.pt
+    networks:
+      - tvds-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tvds-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/tvds
+      - JWT_SECRET=${JWT_SECRET:-tvds-jwt-secret-dev}
+      - FRONTEND_URL=http://localhost:5173
+      - AI_SERVICE_URL=http://ai-service:8000
+      - AI_API_KEY=${AI_API_KEY:-tvds-ai-key-dev}
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+      - ai-service
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - tvds-network
+
+  # Frontend (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tvds-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - tvds-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  tvds-network:
+    driver: bridge
