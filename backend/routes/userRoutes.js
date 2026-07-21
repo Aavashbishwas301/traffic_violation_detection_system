@@ -11,11 +11,17 @@ import {
   registerValidation,
 } from "../middleware/validationMiddleware.js";
 import { authLimiter } from "../middleware/rateLimitMiddleware.js";
+import {
+  forgotPassword,
+  resetPassword,
+} from "../controllers/passwordResetController.js";
 
 const router = express.Router();
 
 router.post("/", registerValidation, registerUser);
 router.post("/login", authLimiter, loginValidation, authUser);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 router
   .route("/profile")
   .get(protect, getUserProfile)
