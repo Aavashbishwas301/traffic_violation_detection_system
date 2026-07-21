@@ -1,32 +1,41 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-const adminSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true,
+const adminSchema = new mongoose.Schema(
+  {
+    fullName: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    phone: {
+      type: String,
+    },
+    profilePhoto: {
+      type: String,
+    },
+    lastLogin: {
+      type: Date,
+    },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpire: {
+      type: Date,
+    },
   },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
+  {
+    timestamps: true,
   },
-  password: {
-    type: String,
-    required: true,
-  },
-  phone: {
-    type: String,
-  },
-  profilePhoto: {
-    type: String,
-  },
-  lastLogin: {
-    type: Date,
-  },
-}, {
-  timestamps: true,
-});
+);
 
 // Match user entered password to hashed password in database
 adminSchema.methods.matchPassword = async function (enteredPassword) {
@@ -34,8 +43,8 @@ adminSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 // Encrypt password using bcrypt
-adminSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+adminSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
     next();
   }
 
@@ -43,6 +52,6 @@ adminSchema.pre('save', async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-const Admin = mongoose.model('Admin', adminSchema);
+const Admin = mongoose.model("Admin", adminSchema);
 
 export default Admin;

@@ -1,51 +1,60 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-const trafficPoliceSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true,
+const trafficPoliceSchema = new mongoose.Schema(
+  {
+    fullName: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    phone: {
+      type: String,
+    },
+    badgeNumber: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    rank: {
+      type: String,
+    },
+    designation: {
+      type: String,
+    },
+    station: {
+      type: String,
+    },
+    joiningDate: {
+      type: Date,
+    },
+    status: {
+      type: String,
+      enum: ["Active", "Inactive", "Suspended"],
+      default: "Active",
+    },
+    profilePhoto: {
+      type: String,
+    },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpire: {
+      type: Date,
+    },
   },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
+  {
+    timestamps: true,
   },
-  password: {
-    type: String,
-    required: true,
-  },
-  phone: {
-    type: String,
-  },
-  badgeNumber: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  rank: {
-    type: String,
-  },
-  designation: {
-    type: String,
-  },
-  station: {
-    type: String,
-  },
-  joiningDate: {
-    type: Date,
-  },
-  status: {
-    type: String,
-    enum: ['Active', 'Inactive', 'Suspended'],
-    default: 'Active',
-  },
-  profilePhoto: {
-    type: String,
-  },
-}, {
-  timestamps: true,
-});
+);
 
 // Match user entered password to hashed password in database
 trafficPoliceSchema.methods.matchPassword = async function (enteredPassword) {
@@ -53,8 +62,8 @@ trafficPoliceSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 // Encrypt password using bcrypt
-trafficPoliceSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+trafficPoliceSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
     next();
   }
 
@@ -62,6 +71,6 @@ trafficPoliceSchema.pre('save', async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-const TrafficPolice = mongoose.model('TrafficPolice', trafficPoliceSchema);
+const TrafficPolice = mongoose.model("TrafficPolice", trafficPoliceSchema);
 
 export default TrafficPolice;
