@@ -4,6 +4,7 @@ import cors from "cors";
 import corsOptions from "./config/corsOptions.js";
 import compression from "compression";
 import helmet from "helmet";
+import { globalLimiter } from "./middleware/rateLimitMiddleware.js";
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import violationRoutes from "./routes/violationRoutes.js";
@@ -31,6 +32,7 @@ app.use(
   }),
 );
 app.use(compression());
+app.use(globalLimiter);
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
