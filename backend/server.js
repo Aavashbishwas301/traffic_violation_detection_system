@@ -14,6 +14,8 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import path from "path";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 import validateEnv from "./config/envValidator.js";
+import { createServer } from "http";
+import { initializeSocket } from "./socket.js";
 
 dotenv.config();
 
@@ -24,6 +26,8 @@ validateEnv();
 connectDB();
 
 const app = express();
+const httpServer = createServer(app);
+const io = initializeSocket(httpServer);
 
 // Middleware & Optimization
 app.use(
@@ -58,6 +62,6 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
