@@ -1,4 +1,5 @@
 import Violation from "../models/Violation.js";
+import { sendNotification } from "../socket.js";
 import Admin from "../models/Admin.js";
 import TrafficPolice from "../models/TrafficPolice.js";
 import VehicleOwner from "../models/VehicleOwner.js";
@@ -251,6 +252,14 @@ const broadcastMessage = async (req, res) => {
         })),
       );
     }
+
+    // Real-time notification via Socket.io
+    sendNotification("notification", {
+      title: title || "System Update",
+      message,
+      type: "broadcast",
+      timestamp: new Date(),
+    });
 
     res.json({ success: true, recipients: allRecipients.length });
   } catch (error) {

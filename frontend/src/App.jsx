@@ -7,6 +7,8 @@ import {
 } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { ToastProvider } from "./context/ToastContext.jsx";
+import { SocketProvider } from "./context/SocketContext.jsx";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { Shield } from "lucide-react";
 import "./App.css";
 
@@ -53,61 +55,68 @@ const Loader = () => (
 function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <Router>
-          <Suspense fallback={<Loader />}>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/payment-status" element={<PaymentStatus />} />
+      <ThemeProvider>
+        <ToastProvider>
+          <SocketProvider>
+            <Router>
+              <Suspense fallback={<Loader />}>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/payment-status" element={<PaymentStatus />} />
 
-              {/* Protected Dashboard Routes — role-based routing inside <Dashboard /> */}
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/settings" element={<Dashboard />} />
+                  {/* Protected Dashboard Routes — role-based routing inside <Dashboard /> */}
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/settings" element={<Dashboard />} />
 
-              {/* Admin Specific Routes */}
-              <Route path="/users" element={<Dashboard />} />
-              <Route path="/officers" element={<Dashboard />} />
-              <Route path="/vehicle-mgmt" element={<Dashboard />} />
-              <Route path="/unregistered-vehicles" element={<Dashboard />} />
-              <Route path="/violation-mgmt" element={<Dashboard />} />
-              <Route path="/evidence-mgmt" element={<Dashboard />} />
-              <Route path="/fines-mgmt" element={<Dashboard />} />
-              <Route path="/financial-rules" element={<Dashboard />} />
-              <Route path="/complaints-mgmt" element={<Dashboard />} />
-              <Route path="/global-reports" element={<Dashboard />} />
-              <Route path="/reports" element={<Dashboard />} />
-              <Route path="/ai-monitoring" element={<Dashboard />} />
-              <Route path="/notifications-mgmt" element={<Dashboard />} />
-              <Route path="/system-settings" element={<Dashboard />} />
+                  {/* Admin Specific Routes */}
+                  <Route path="/users" element={<Dashboard />} />
+                  <Route path="/officers" element={<Dashboard />} />
+                  <Route path="/vehicle-mgmt" element={<Dashboard />} />
+                  <Route
+                    path="/unregistered-vehicles"
+                    element={<Dashboard />}
+                  />
+                  <Route path="/violation-mgmt" element={<Dashboard />} />
+                  <Route path="/evidence-mgmt" element={<Dashboard />} />
+                  <Route path="/fines-mgmt" element={<Dashboard />} />
+                  <Route path="/financial-rules" element={<Dashboard />} />
+                  <Route path="/complaints-mgmt" element={<Dashboard />} />
+                  <Route path="/global-reports" element={<Dashboard />} />
+                  <Route path="/reports" element={<Dashboard />} />
+                  <Route path="/ai-monitoring" element={<Dashboard />} />
+                  <Route path="/notifications-mgmt" element={<Dashboard />} />
+                  <Route path="/system-settings" element={<Dashboard />} />
 
-              {/* Police Specific Routes */}
-              <Route path="/detect" element={<Dashboard />} />
-              <Route path="/manual-entry" element={<Dashboard />} />
-              <Route path="/manage" element={<Dashboard />} />
-              <Route path="/records" element={<Dashboard />} />
-              <Route path="/notifications" element={<Dashboard />} />
-              <Route path="/search" element={<Dashboard />} />
-              <Route path="/evidence" element={<Dashboard />} />
-              <Route path="/fines" element={<Dashboard />} />
+                  {/* Police Specific Routes */}
+                  <Route path="/detect" element={<Dashboard />} />
+                  <Route path="/manual-entry" element={<Dashboard />} />
+                  <Route path="/manage" element={<Dashboard />} />
+                  <Route path="/records" element={<Dashboard />} />
+                  <Route path="/notifications" element={<Dashboard />} />
+                  <Route path="/search" element={<Dashboard />} />
+                  <Route path="/evidence" element={<Dashboard />} />
+                  <Route path="/fines" element={<Dashboard />} />
 
-              {/* Owner Specific Routes */}
-              <Route path="/violations" element={<Dashboard />} />
-              <Route path="/gallery" element={<Dashboard />} />
-              <Route path="/payments" element={<Dashboard />} />
-              <Route path="/vehicle" element={<Dashboard />} />
-              <Route path="/complaints" element={<Dashboard />} />
+                  {/* Owner Specific Routes */}
+                  <Route path="/violations" element={<Dashboard />} />
+                  <Route path="/gallery" element={<Dashboard />} />
+                  <Route path="/payments" element={<Dashboard />} />
+                  <Route path="/vehicle" element={<Dashboard />} />
+                  <Route path="/complaints" element={<Dashboard />} />
 
-              {/* Catch-all redirect */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </Router>
-      </ToastProvider>
+                  {/* Catch-all redirect */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </Router>
+          </SocketProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }
