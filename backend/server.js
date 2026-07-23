@@ -16,6 +16,7 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 import validateEnv from "./config/envValidator.js";
 import { createServer } from "http";
 import { initializeSocket } from "./socket.js";
+import "./jobs/violationQueue.js"; // Initialize background worker
 
 dotenv.config();
 

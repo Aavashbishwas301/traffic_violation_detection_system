@@ -7,6 +7,8 @@ import VehicleOwner from "../models/VehicleOwner.js";
 import Rule from "../models/Rule.js";
 import Evidence from "../models/Evidence.js";
 import Fine from "../models/Fine.js";
+import { violationQueue } from "../jobs/violationQueue.js";
+
 
 // @desc    Upload evidence and detect violations
 // @route   POST /api/violations/upload
@@ -16,130 +18,29 @@ const uploadViolation = async (req, res) => {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  const { location, latitude, longitude, remarks } = req.body;
-  let vehicleNumber = req.body.vehicleNumber;
+  const { location, latitude, longitude, remarks, vehicleNumber } = req.body;
 
   try {
-    // 1. Call AI Service to detect violations AND vehicle number (OCR)
-    const formData = new FormData();
-    formData.append(
-      "file",
-      fs.createReadStream(req.file.path),
-      req.file.originalname,
-    );
-
-    const aiResponse = await axios.post(
-      `${process.env.AI_SERVICE_URL}/detect`,
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          Authorization: `Bearer ${process.env.AI_API_KEY || "tvds-ai-key-dev"}`,
-        },
-      },
-    );
-
-    const {
-      violations: detectedViolations,
-      vehicle_number: aiVehicleNumber,
-      vehicle_type: aiVehicleType,
-      meta,
-    } = aiResponse.data;
-
-    // 2. Determine vehicle number
-    if (!vehicleNumber || vehicleNumber === "Unknown" || vehicleNumber === "") {
-      vehicleNumber = aiVehicleNumber || "Unknown";
-    }
-
-    // Normalize vehicle number for consistent matching (remove spaces/dashes)
-    const normalizedNumber = vehicleNumber
-      .replace(/[^A-Z0-9]/gi, "")
-      .toUpperCase();
-
-    // 3. Find or create vehicle and owner
-    // Search using a regex or by normalizing all numbers in DB (better to normalize input)
-    // For now, let's try to match exactly or by normalized regex
-    let vehicle = await Vehicle.findOne({
-      $or: [
-        { vehicleNumber: vehicleNumber },
-        { vehicleNumber: normalizedNumber },
-        {
-          vehicleNumber: new RegExp(
-            "^" + normalizedNumber.split("").join("\\s*") + "$",
-            "i",
-          ),
-        },
-      ],
-    });
-    let owner;
-
-    if (!vehicle) {
-      // Vehicle not found in DB — create as Unregistered
-      // Admin can later assign a real owner via the admin panel
-      vehicle = await Vehicle.create({
-        vehicleNumber,
-        vehicleType: aiVehicleType || "Other",
-        ownerId: null,
-        brand: "Unknown",
-        model: "Unknown",
-        registrationStatus: "Unregistered",
-      });
-    }
-
-    const actualOwnerId = vehicle.ownerId || null;
-
-    // 4. Process each detected violation
-    const results = [];
-
-    for (const dv of detectedViolations) {
-      // Find matching rule
-      const rule = await Rule.findOne({ violationType: dv.type });
-      const fineAmount = rule ? rule.fineAmount : 500; // Default fine
-
-      // Create Violation
-      const violation = await Violation.create({
-        vehicleId: vehicle._id,
-        ownerId: actualOwnerId,
-        policeId: req.user._id,
-        ruleId: rule ? rule._id : null,
-        violationType: dv.type,
-        location: location || "Detected Location",
-        latitude,
-        longitude,
-        aiDetected: true,
-        aiConfidence: dv.confidence,
-        status: "Pending",
-        remarks: remarks || "AI Detected Violation",
-      });
-
-      // Create Evidence
-      await Evidence.create({
-        violationId: violation._id,
-        imageUrl: req.file.path,
-        cameraLocation: location || "Static Camera",
-        uploadedBy: req.user._id,
-      });
-
-      // Create Fine
-      const fine = await Fine.create({
-        violationId: violation._id,
-        amount: fineAmount,
-        dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
-        paymentStatus: "Pending",
-      });
-
-      results.push({ violation, fine });
-    }
-
-    res.status(201).json({
-      message: "Detection and recording complete",
+    // Add job to BullMQ
+    const job = await violationQueue.add('detect-violation', {
+      filePath: req.file.path,
+      originalname: req.file.originalname,
+      location,
+      latitude,
+      longitude,
+      remarks,
       vehicleNumber,
-      results,
-      meta,
+      uploaderId: req.user._id,
+    });
+
+    res.status(202).json({
+      message: "File uploaded successfully. Processing started in the background.",
+      jobId: job.id,
+      status: "processing",
     });
   } catch (error) {
-    console.error("Upload Error:", error);
-    res.status(500).json({ message: "Error processing violation detection" });
+    console.error("Upload Queue Error:", error);
+    res.status(500).json({ message: "Error enqueueing violation detection" });
   }
 };
 

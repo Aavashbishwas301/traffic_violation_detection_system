@@ -163,6 +163,28 @@ const verifyEsewa = async (req, res) => {
     const decoded = JSON.parse(Buffer.from(data, "base64").toString("utf-8"));
     let success = false;
 
+    // Verify eSewa Signature to prevent payment spoofing
+    const secret = process.env.ESEWA_SECRET;
+    if (!secret) throw new Error("eSewa secret not configured");
+
+    if (!decoded.signed_field_names || !decoded.signature) {
+      throw new Error("Invalid payload: Missing signature or signed_field_names");
+    }
+
+    // Reconstruct message from signed_field_names
+    const fields = decoded.signed_field_names.split(",");
+    const message = fields.map((field) => `${field}=${decoded[field] || ""}`).join(",");
+
+    const expectedHash = crypto
+      .createHmac("sha256", secret)
+      .update(message)
+      .digest("base64");
+
+    if (expectedHash !== decoded.signature) {
+      console.error("eSewa Security Alert: Signature mismatch");
+      throw new Error("Invalid eSewa signature");
+    }
+
     if (decoded.status === "COMPLETE") {
       const fineId = decoded.transaction_uuid.split("-")[0];
       const fine = await Fine.findById(fineId).populate("violationId");

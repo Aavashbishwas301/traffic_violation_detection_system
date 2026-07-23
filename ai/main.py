@@ -16,9 +16,15 @@ security = HTTPBearer(auto_error=False)
 # Global Model Cache
 model = YOLO('yolov8n.pt') 
 reader = easyocr.Reader(['en'], gpu=False) # Set gpu=True if you have a CUDA GPU
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+
+# Global Constants
+YOLO_CONFIDENCE_THRESHOLD = 0.25
+HELMET_HEAD_CROP_RATIO = 0.25 # Analyze top 25% for helmet/face
 
 # API Key Authentication
 AI_API_KEY = os.getenv("AI_API_KEY", "tvds-ai-key-dev")
+
 
 async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if credentials is None:
@@ -30,9 +36,9 @@ async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(sec
 def extract_plate_number(img, bbox):
     """
     Crops the vehicle from the image and tries to extract the license plate number.
+    Uses alphanumeric filtering and checks for letters and numbers.
     """
     x1, y1, x2, y2 = [int(x) for x in bbox]
-    # Add a small buffer and ensure within image bounds
     h, w, _ = img.shape
     x1, y1 = max(0, x1), max(0, y1)
     x2, y2 = min(w, x2), min(h, y2)
@@ -42,22 +48,29 @@ def extract_plate_number(img, bbox):
     if vehicle_crop.size == 0:
         return None
 
-    # Run OCR on the crop
-    results = reader.readtext(vehicle_crop)
-    
-    # Heuristic: Filter for something that looks like a plate (alphanumeric, 4-10 chars)
-    # This is a simple regex for many license plate formats
-    plate_pattern = re.compile(r'[A-Z0-9\-\s]{4,12}')
+    # Run OCR with allowlist for better accuracy on plates
+    results = reader.readtext(vehicle_crop, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ')
     
     best_plate = None
     max_conf = 0
     
     for (bbox_ocr, text, prob) in results:
         clean_text = text.upper().strip()
-        if plate_pattern.match(clean_text) and prob > max_conf:
-            # Basic cleanup: remove spaces and special chars
-            best_plate = re.sub(r'[^A-Z0-9]', '', clean_text)
-            max_conf = prob
+        # Remove all special characters for length/content checks
+        alphanumeric_text = re.sub(r'[^A-Z0-9]', '', clean_text)
+        
+        has_letters = bool(re.search(r'[A-Z]', alphanumeric_text))
+        has_numbers = bool(re.search(r'[0-9]', alphanumeric_text))
+        
+        if 4 <= len(alphanumeric_text) <= 15 and prob > max_conf:
+            # Prefer combinations of letters and numbers for license plates
+            if has_letters and has_numbers:
+                best_plate = alphanumeric_text
+                max_conf = prob
+            elif not best_plate and prob > max_conf + 0.2:
+                 # Fallback if we only see letters or only numbers but with very high confidence
+                 best_plate = alphanumeric_text
+                 max_conf = prob - 0.2
             
     return best_plate
 
@@ -112,40 +125,31 @@ def detect_light_color(img, bbox):
 
 def check_helmet(img, rider_bbox):
     """
-    Heuristic: Crops the top part of the rider (head) and checks for skin-like colors.
-    If high percentage of skin color is found, it likely means no helmet.
+    Heuristic: Crops the head of the rider and uses Haar Cascades to check for a face.
+    If a face is clearly detected, it likely means they are NOT wearing a full-face helmet.
+    Returns True if helmet is likely worn (no face detected), False if no helmet (face detected).
     """
     x1, y1, x2, y2 = [int(x) for x in rider_bbox]
-    # Head is roughly the top 20% of the person's bounding box
-    head_height = int((y2 - y1) * 0.22)
+    head_height = int((y2 - y1) * HELMET_HEAD_CROP_RATIO)
     head_crop = img[y1:y1+head_height, x1:x2]
     
     if head_crop.size == 0:
-        return True 
+        return True # Default to True to avoid false positives on bad crops
 
-    # Convert to HSV for skin color detection
-    hsv = cv2.cvtColor(head_crop, cv2.COLOR_BGR2HSV)
+    gray = cv2.cvtColor(head_crop, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(20, 20))
     
-    # Define skin color ranges (approximate for various lighting)
-    lower_skin = np.array([0, 20, 70], dtype=np.uint8)
-    upper_skin = np.array([20, 255, 255], dtype=np.uint8)
-    
-    mask = cv2.inRange(hsv, lower_skin, upper_skin)
-    skin_pixels = cv2.countNonZero(mask)
-    total_pixels = head_crop.shape[0] * head_crop.shape[1]
-    
-    if total_pixels == 0: return True
-    
-    skin_ratio = skin_pixels / total_pixels
-    
-    # If more than 15% of the head is "skin" colored, it's likely a bare head/no helmet
-    return skin_ratio < 0.15
+    if len(faces) > 0:
+        return False # Face detected -> No Helmet
+    return True # No face detected -> Likely wearing a helmet
+
 
 def process_image(img):
     """Run detection on a single image frame and return results."""
     start_time = cv2.getTickCount()
     
-    results = model(img, conf=0.25, verbose=False)
+    results = model(img, conf=YOLO_CONFIDENCE_THRESHOLD, verbose=False)
+
     
     detections = []
     VEHICLE_CLASSES = ['car', 'motorcycle', 'bus', 'truck']
@@ -268,8 +272,8 @@ async def detect_violations(
         try:
             # Write to temp file
             with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp:
-                tmp.write(contents)
                 temp_path = tmp.name
+                tmp.write(contents)
             
             cap = cv2.VideoCapture(temp_path)
             if not cap.isOpened():

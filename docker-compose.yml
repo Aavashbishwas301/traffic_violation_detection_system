@@ -29,6 +29,18 @@ services:
     networks:
       - tvds-network
 
+  # Redis Cache for Job Queues
+  redis:
+    image: redis:7-alpine
+    container_name: tvds-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tvds-network
+
   # Backend API
   backend:
     build:
@@ -46,9 +58,13 @@ services:
       - AI_SERVICE_URL=http://ai-service:8000
       - AI_API_KEY=${AI_API_KEY:-tvds-ai-key-dev}
       - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+
     depends_on:
       - mongodb
       - ai-service
+      - redis
+
     volumes:
       - ./backend/uploads:/app/uploads
     networks:
@@ -70,6 +86,7 @@ services:
 
 volumes:
   mongodb_data:
+  redis_data:
 
 networks:
   tvds-network:
