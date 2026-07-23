@@ -10,6 +10,7 @@ import { ToastProvider } from "./context/ToastContext.jsx";
 import { SocketProvider } from "./context/SocketContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { Shield } from "lucide-react";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import "./App.css";
 
 // Lazy load pages for performance optimization
@@ -20,6 +21,36 @@ const About = lazy(() => import("./pages/About.jsx"));
 const Contact = lazy(() => import("./pages/Contact.jsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.jsx"));
 const PaymentStatus = lazy(() => import("./pages/PaymentStatus.jsx"));
+
+// --- Admin Pages ---
+const AdminOverview = lazy(() => import("./pages/admin/AdminOverview.jsx"));
+const ManageOfficers = lazy(() => import("./pages/admin/ManageOfficers.jsx"));
+const VehicleRegistry = lazy(() => import("./pages/admin/VehicleRegistry.jsx"));
+const UnregisteredVehicles = lazy(() => import("./pages/admin/UnregisteredVehicles.jsx"));
+const ViolationManagement = lazy(() => import("./pages/admin/ViolationManagement.jsx"));
+const FineManagement = lazy(() => import("./pages/admin/FineManagement.jsx"));
+const TrafficRules = lazy(() => import("./pages/admin/TrafficRules.jsx"));
+const CitizenComplaints = lazy(() => import("./pages/admin/CitizenComplaints.jsx"));
+const GlobalReports = lazy(() => import("./pages/admin/GlobalReports.jsx"));
+const SystemNotifications = lazy(() => import("./pages/admin/SystemNotifications.jsx"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings.jsx"));
+
+// --- Police Pages ---
+const PoliceOverview = lazy(() => import("./pages/police/PoliceOverview.jsx"));
+const AIScan = lazy(() => import("./pages/police/AIScan.jsx"));
+const ManualEntry = lazy(() => import("./pages/police/ManualEntry.jsx"));
+const VerifyDesk = lazy(() => import("./pages/police/VerifyDesk.jsx"));
+const ViolationRecords = lazy(() => import("./pages/police/ViolationRecords.jsx"));
+const VehicleSearch = lazy(() => import("./pages/police/VehicleSearch.jsx"));
+const EvidenceVault = lazy(() => import("./pages/police/EvidenceVault.jsx"));
+
+// --- Owner Pages ---
+const OwnerOverview = lazy(() => import("./pages/owner/OwnerOverview.jsx"));
+const MyViolations = lazy(() => import("./pages/owner/MyViolations.jsx"));
+const MyPhotos = lazy(() => import("./pages/owner/MyPhotos.jsx"));
+const PaymentHistory = lazy(() => import("./pages/owner/PaymentHistory.jsx"));
+const MyVehicles = lazy(() => import("./pages/owner/MyVehicles.jsx"));
+const SendComplaint = lazy(() => import("./pages/owner/SendComplaint.jsx"));
 
 const Loader = () => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden relative">
@@ -33,8 +64,7 @@ const Loader = () => (
       </div>
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-black tracking-tighter text-primary-950 uppercase italic leading-none block">
-          TVDS{" "}
-          <span className="text-accent-crimson font-light text-2xl">GRID</span>
+          TVDS <span className="text-accent-crimson font-light text-2xl">GRID</span>
         </h2>
         <p className="text-[10px] font-black uppercase tracking-[0.8em] text-neutral-300 italic animate-pulse">
           Initializing Neural Nodes...
@@ -69,45 +99,38 @@ function App() {
                   <Route path="/register" element={<Register />} />
                   <Route path="/payment-status" element={<PaymentStatus />} />
 
-                  {/* Protected Dashboard Routes — role-based routing inside <Dashboard /> */}
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/settings" element={<Dashboard />} />
+                  {/* Protected Dashboard Route (Entrypoint, will redirect based on role) */}
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-                  {/* Admin Specific Routes */}
-                  <Route path="/users" element={<Dashboard />} />
-                  <Route path="/officers" element={<Dashboard />} />
-                  <Route path="/vehicle-mgmt" element={<Dashboard />} />
-                  <Route
-                    path="/unregistered-vehicles"
-                    element={<Dashboard />}
-                  />
-                  <Route path="/violation-mgmt" element={<Dashboard />} />
-                  <Route path="/evidence-mgmt" element={<Dashboard />} />
-                  <Route path="/fines-mgmt" element={<Dashboard />} />
-                  <Route path="/financial-rules" element={<Dashboard />} />
-                  <Route path="/complaints-mgmt" element={<Dashboard />} />
-                  <Route path="/global-reports" element={<Dashboard />} />
-                  <Route path="/reports" element={<Dashboard />} />
-                  <Route path="/ai-monitoring" element={<Dashboard />} />
-                  <Route path="/notifications-mgmt" element={<Dashboard />} />
-                  <Route path="/system-settings" element={<Dashboard />} />
+                  {/* --- Admin Specific Routes --- */}
+                  <Route path="/admin" element={<ProtectedRoute allowedRoles={["Admin"]}><AdminOverview /></ProtectedRoute>} />
+                  <Route path="/officers" element={<ProtectedRoute allowedRoles={["Admin"]}><ManageOfficers /></ProtectedRoute>} />
+                  <Route path="/vehicle-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><VehicleRegistry /></ProtectedRoute>} />
+                  <Route path="/unregistered-vehicles" element={<ProtectedRoute allowedRoles={["Admin"]}><UnregisteredVehicles /></ProtectedRoute>} />
+                  <Route path="/violation-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><ViolationManagement /></ProtectedRoute>} />
+                  <Route path="/fines-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><FineManagement /></ProtectedRoute>} />
+                  <Route path="/financial-rules" element={<ProtectedRoute allowedRoles={["Admin"]}><TrafficRules /></ProtectedRoute>} />
+                  <Route path="/complaints-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><CitizenComplaints /></ProtectedRoute>} />
+                  <Route path="/global-reports" element={<ProtectedRoute allowedRoles={["Admin"]}><GlobalReports /></ProtectedRoute>} />
+                  <Route path="/notifications-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><SystemNotifications /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute allowedRoles={["Admin"]}><AdminSettings /></ProtectedRoute>} />
 
-                  {/* Police Specific Routes */}
-                  <Route path="/detect" element={<Dashboard />} />
-                  <Route path="/manual-entry" element={<Dashboard />} />
-                  <Route path="/manage" element={<Dashboard />} />
-                  <Route path="/records" element={<Dashboard />} />
-                  <Route path="/notifications" element={<Dashboard />} />
-                  <Route path="/search" element={<Dashboard />} />
-                  <Route path="/evidence" element={<Dashboard />} />
-                  <Route path="/fines" element={<Dashboard />} />
+                  {/* --- Police Specific Routes --- */}
+                  <Route path="/police" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><PoliceOverview /></ProtectedRoute>} />
+                  <Route path="/detect" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><AIScan /></ProtectedRoute>} />
+                  <Route path="/manual-entry" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><ManualEntry /></ProtectedRoute>} />
+                  <Route path="/manage" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><VerifyDesk /></ProtectedRoute>} />
+                  <Route path="/records" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><ViolationRecords /></ProtectedRoute>} />
+                  <Route path="/search" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><VehicleSearch /></ProtectedRoute>} />
+                  <Route path="/evidence" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><EvidenceVault /></ProtectedRoute>} />
 
-                  {/* Owner Specific Routes */}
-                  <Route path="/violations" element={<Dashboard />} />
-                  <Route path="/gallery" element={<Dashboard />} />
-                  <Route path="/payments" element={<Dashboard />} />
-                  <Route path="/vehicle" element={<Dashboard />} />
-                  <Route path="/complaints" element={<Dashboard />} />
+                  {/* --- Owner Specific Routes --- */}
+                  <Route path="/owner" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><OwnerOverview /></ProtectedRoute>} />
+                  <Route path="/violations" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><MyViolations /></ProtectedRoute>} />
+                  <Route path="/gallery" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><MyPhotos /></ProtectedRoute>} />
+                  <Route path="/payments" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><PaymentHistory /></ProtectedRoute>} />
+                  <Route path="/vehicle" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><MyVehicles /></ProtectedRoute>} />
+                  <Route path="/complaints" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><SendComplaint /></ProtectedRoute>} />
 
                   {/* Catch-all redirect */}
                   <Route path="*" element={<Navigate to="/" replace />} />

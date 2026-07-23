@@ -1,30 +1,27 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Navigate } from 'react-router-dom';
-import PoliceDashboard from './PoliceDashboard.jsx';
-import OwnerDashboard from './OwnerDashboard.jsx';
-import AdminDashboard from './AdminDashboard.jsx';
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-white">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
     </div>
   );
   
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" replace />;
 
   if (user.role === 'Admin') {
-    return <AdminDashboard />;
+    return <Navigate to="/admin" replace />;
   }
 
   if (user.role === 'TrafficPolice') {
-    return <PoliceDashboard />;
+    return <Navigate to="/police" replace />;
   }
 
-  return <OwnerDashboard />;
+  return <Navigate to="/owner" replace />;
 };
 
 export default Dashboard;
