@@ -74,7 +74,6 @@ const vehicleSchema = new mongoose.Schema(
 
 // Indexes for frequently queried fields
 vehicleSchema.index({ ownerId: 1 });
-vehicleSchema.index({ vehicleNumber: 1 });
 
 const Vehicle = mongoose.model("Vehicle", vehicleSchema);
 

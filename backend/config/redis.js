@@ -9,17 +9,21 @@ const redisConfig = {
   maxRetriesPerRequest: null, // BullMQ requires this to be null
 };
 
-// Check if REDIS_URL is provided (useful for docker-compose environment)
-const redisConnection = process.env.REDIS_URL 
-    ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null })
-    : new Redis(redisConfig);
+let redisConnection = null;
 
-redisConnection.on('connect', () => {
-  console.log('Redis connected successfully for Job Queue');
-});
+if (process.env.NODE_ENV !== "test") {
+  // Check if REDIS_URL is provided (useful for docker-compose environment)
+  redisConnection = process.env.REDIS_URL 
+      ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null })
+      : new Redis(redisConfig);
 
-redisConnection.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
+  redisConnection.on('connect', () => {
+    console.log('Redis connected successfully for Job Queue');
+  });
+
+  redisConnection.on('error', (err) => {
+    console.error('Redis connection error:', err);
+  });
+}
 
 export default redisConnection;
