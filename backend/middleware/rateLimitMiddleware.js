@@ -16,10 +16,10 @@ export const globalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Strict limiter for auth endpoints — 5 attempts per 15 minutes per IP
+// Strict limiter for auth endpoints — 50 attempts per 15 minutes per IP
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: 50,
   message: {
     message: "Too many login attempts. Please try again after 15 minutes.",
   },

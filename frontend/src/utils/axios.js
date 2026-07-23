@@ -18,7 +18,7 @@ const api = axios.create({
 // Request interceptor — attach auth token
 api.interceptors.request.use(
   (config) => {
-    const user = localStorage.getItem("user");
+    const user = localStorage.getItem("tvds_user");
     if (user) {
       try {
         const parsed = JSON.parse(user);
@@ -39,7 +39,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("user");
+      localStorage.removeItem("tvds_user");
       window.location.href = "/login";
     }
     return Promise.reject(error);
