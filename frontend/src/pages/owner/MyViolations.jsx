@@ -4,6 +4,7 @@ import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
 import { ShieldCheck } from "lucide-react";
+import { resolveImageUrl } from "../../utils/helpers.js";
 
 const MyViolations = () => {
   const { user } = useAuth();
@@ -71,11 +72,8 @@ const MyViolations = () => {
   };
 
   const viewEvidence = (path) => {
-    if (!path) return addToast("No photo found.", "warning");
-    window.open(
-      `${api.defaults.baseURL}/${path.replace(/\\/g, "/")}`,
-      "_blank",
-    );
+    if (!path) return addToast("No evidence found.", "warning");
+    window.open(resolveImageUrl(path), "_blank");
   };
 
   if (loading) {

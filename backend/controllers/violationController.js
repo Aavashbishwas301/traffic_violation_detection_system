@@ -21,9 +21,12 @@ const uploadViolation = async (req, res) => {
   const { location, latitude, longitude, remarks, vehicleNumber } = req.body;
 
   try {
+    // Use location (S3 URL) if available, otherwise fallback to local path
+    const fileUri = req.file.location || req.file.path;
+
     // Add job to BullMQ
     const job = await violationQueue.add('detect-violation', {
-      filePath: req.file.path,
+      filePath: fileUri,
       originalname: req.file.originalname,
       location,
       latitude,
@@ -88,9 +91,11 @@ const manualViolation = async (req, res) => {
       aiDetected: false,
     });
 
+    const fileUri = req.file.location || req.file.path;
+
     await Evidence.create({
       violationId: violation._id,
-      imageUrl: req.file.path,
+      imageUrl: fileUri,
       cameraLocation: location,
       uploadedBy: req.user._id,
     });

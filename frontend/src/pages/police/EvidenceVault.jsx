@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
-import { useToast } from "../../context/ToastContext.jsx";
 import { Eye, Search } from "lucide-react";
+import { useToast } from "../../context/ToastContext.jsx";
+import { resolveImageUrl } from "../../utils/helpers.js";
 
 const EvidenceVault = () => {
   const { user } = useAuth();
@@ -30,10 +31,7 @@ const EvidenceVault = () => {
 
   const viewEvidence = (path) => {
     if (!path) return addToast("No evidence found.", "warning");
-    window.open(
-      `${api.defaults.baseURL}/${path.replace(/\\/g, "/")}`,
-      "_blank",
-    );
+    window.open(resolveImageUrl(path), "_blank");
   };
 
   if (loading) {
@@ -86,7 +84,7 @@ const EvidenceVault = () => {
               onClick={() => viewEvidence(v.imageUrl || v.evidenceUrl)}>
               <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden">
                 <img
-                  src={`${api.defaults.baseURL}/${(v.imageUrl || v.evidenceUrl).replace(/\\/g, "/")}`}
+                  src={resolveImageUrl(v.imageUrl || v.evidenceUrl)}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                   alt="Evidence"
                 />

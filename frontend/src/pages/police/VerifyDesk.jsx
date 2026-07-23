@@ -4,6 +4,7 @@ import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
 import { CheckCircle2, XCircle, Eye } from "lucide-react";
+import { resolveImageUrl } from "../../utils/helpers.js";
 
 const VerifyDesk = () => {
   const { user } = useAuth();
@@ -40,10 +41,7 @@ const VerifyDesk = () => {
 
   const viewEvidence = (path) => {
     if (!path) return addToast("No evidence found.", "warning");
-    window.open(
-      `${api.defaults.baseURL}/${path.replace(/\\/g, "/")}`,
-      "_blank",
-    );
+    window.open(resolveImageUrl(path), "_blank");
   };
 
   if (loading) {

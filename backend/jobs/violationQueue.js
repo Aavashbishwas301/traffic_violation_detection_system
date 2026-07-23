@@ -20,10 +20,18 @@ const worker = new Worker('violation-queue', async (job) => {
 
   try {
     // 1. Call AI Service to detect violations AND vehicle number (OCR)
+    let fileStream;
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      const response = await axios.get(filePath, { responseType: 'stream' });
+      fileStream = response.data;
+    } else {
+      fileStream = fs.createReadStream(filePath);
+    }
+
     const formData = new FormData();
     formData.append(
       "file",
-      fs.createReadStream(filePath),
+      fileStream,
       originalname
     );
 

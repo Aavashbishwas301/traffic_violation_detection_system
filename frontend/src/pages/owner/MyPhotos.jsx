@@ -4,6 +4,8 @@ import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
 import { Eye, Image as ImageIcon } from "lucide-react";
+import { useToast } from "../../context/ToastContext.jsx";
+import { resolveImageUrl } from "../../utils/helpers.js";
 
 const MyPhotos = () => {
   const { user } = useAuth();
@@ -27,10 +29,7 @@ const MyPhotos = () => {
 
   const viewEvidence = (path) => {
     if (!path) return addToast("No photo found.", "warning");
-    window.open(
-      `${api.defaults.baseURL}/${path.replace(/\\/g, "/")}`,
-      "_blank",
-    );
+    window.open(resolveImageUrl(path), "_blank");
   };
 
   if (loading) {
@@ -59,7 +58,7 @@ const MyPhotos = () => {
               onClick={() => viewEvidence(v.imageUrl || v.evidenceUrl)}>
               <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden">
                 <img
-                  src={`${api.defaults.baseURL}/${(v.imageUrl || v.evidenceUrl).replace(/\\/g, "/")}`}
+                  src={resolveImageUrl(v.imageUrl || v.evidenceUrl)}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                   alt="Evidence"
                 />
