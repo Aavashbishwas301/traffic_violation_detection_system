@@ -4,7 +4,6 @@ import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
 import { Eye, Image as ImageIcon } from "lucide-react";
-import { useToast } from "../../context/ToastContext.jsx";
 import { resolveImageUrl } from "../../utils/helpers.js";
 
 const MyPhotos = () => {
