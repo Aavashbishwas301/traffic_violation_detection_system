@@ -3,6 +3,11 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
+import { Download, Filter, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Card, CardContent } from "../../components/ui/Card.jsx";
+import { DataTable } from "../../components/ui/DataTable.jsx";
+import { Badge } from "../../components/ui/Badge.jsx";
+import { Button } from "../../components/ui/Button.jsx";
 
 const ViolationRecords = () => {
   const { user } = useAuth();
@@ -62,13 +67,14 @@ const ViolationRecords = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    addToast("Exporting CSV file...", "success");
   };
 
   if (loading) {
     return (
       <Layout title="Violation Records">
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
         </div>
       </Layout>
     );
@@ -76,87 +82,100 @@ const ViolationRecords = () => {
 
   return (
     <Layout title="Violation Records">
-      <div className="space-y-8 animate-fade-in pb-20">
-        <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
-          <div>
-            <h3 className="text-3xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">
-              Violation Records.
+      <div className="space-y-6 animate-fade-in pb-20">
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 pb-4">
+          <div className="space-y-1">
+            <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Master Records Log
             </h3>
-            <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">
-              Historical database of all traffic offenses recorded.
+            <p className="text-sm text-slate-500">
+              Historical database of all traffic offenses recorded system-wide.
             </p>
           </div>
-          <div className="flex space-x-2">
-            <button
+          <div className="flex space-x-3 w-full md:w-auto">
+            <Button
+              variant="outline"
               onClick={handleFilterByDate}
-              className="px-5 py-2.5 bg-neutral-100 rounded-xl text-[9px] font-black uppercase hover:bg-neutral-200 transition-all">
-              Filter by Date
-            </button>
-            <button
+              className="flex-1 md:flex-none bg-white text-slate-700 hover:bg-slate-50"
+            >
+              <Filter size={16} className="mr-2" /> Today
+            </Button>
+            <Button
               onClick={handleExportCSV}
-              className="px-5 py-2.5 bg-primary-950 text-white rounded-xl text-[9px] font-black uppercase hover:bg-black transition-all shadow-lg shadow-primary-950/20">
-              Export CSV
-            </button>
+              className="flex-1 md:flex-none shadow-md hover:-translate-y-0.5 transition-transform"
+            >
+              <Download size={16} className="mr-2" /> Export CSV
+            </Button>
           </div>
         </div>
-        <div className="bg-white rounded-[40px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col max-h-[600px]">
-          <div className="overflow-y-auto custom-scrollbar flex-1">
-            <table className="w-full text-left">
-              <thead className="bg-neutral-50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
-                <tr>
-                  <th className="px-6 py-5">Date</th>
-                  <th className="px-6 py-5">Vehicle</th>
-                  <th className="px-6 py-5">Offense</th>
-                  <th className="px-6 py-5">Fine</th>
-                  <th className="px-6 py-5 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
-                {violations.map((v) => (
-                  <tr
-                    key={v._id}
-                    className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-neutral-400">
-                      {new Date(v.violationDateTime).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-primary-950 font-black tracking-tighter">
-                      {v.vehicleId?.vehicleNumber || "UNKNOWN"}
-                    </td>
-                    <td className="px-6 py-4 text-neutral-400">
-                      {v.violationType}
-                    </td>
-                    <td className="px-6 py-4 text-xs font-black italic text-green-600">
-                      NPR {v.appliedFineAmount || "0"}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span
-                        className={`px-2 py-0.5 rounded-lg border text-[9px] ${
-                          v.status === "Paid"
-                            ? "bg-green-50 text-green-600 border-green-100"
-                            : v.status === "Pending"
-                            ? "bg-yellow-50 text-yellow-600 border-yellow-100"
-                            : v.status === "Rejected"
-                            ? "bg-red-50 text-red-600 border-red-100"
-                            : "bg-blue-50 text-blue-600 border-blue-100"
-                        }`}>
-                        {v.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {violations.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan="5"
-                      className="px-6 py-12 text-center text-neutral-300 italic">
-                      No records found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+
+        <DataTable 
+          data={violations}
+          columns={[
+            {
+              header: "Date/Time",
+              accessorKey: "violationDateTime",
+              sortable: true,
+              cell: (v) => (
+                <div className="flex flex-col">
+                  <span className="font-medium text-slate-700">{new Date(v.violationDateTime).toLocaleDateString()}</span>
+                  <span className="text-xs">{new Date(v.violationDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+              )
+            },
+            {
+              header: "Vehicle",
+              accessorKey: "vehicleId.vehicleNumber",
+              sortable: true,
+              cell: (v) => (
+                <span className="font-mono font-bold bg-slate-100 px-2 py-1 rounded text-slate-800 border border-slate-200">
+                  {v.vehicleId?.vehicleNumber || "UNKNOWN"}
+                </span>
+              )
+            },
+            {
+              header: "Offense Type",
+              accessorKey: "violationType",
+              sortable: true,
+              className: "font-medium text-slate-900"
+            },
+            {
+              header: "Fine Amount",
+              accessorKey: "appliedFineAmount",
+              sortable: true,
+              align: "right",
+              className: "text-right font-medium text-slate-700",
+              cell: (v) => `NPR ${v.appliedFineAmount || "0"}`
+            },
+            {
+              header: "Status",
+              accessorKey: "status",
+              sortable: true,
+              align: "center",
+              className: "text-center",
+              cell: (v) => (
+                <Badge 
+                  variant={
+                    v.status === 'Paid' ? 'default' : 
+                    v.status === 'Pending' ? 'secondary' : 
+                    v.status === 'Rejected' ? 'destructive' : 'outline'
+                  }
+                  className={
+                    v.status === 'Paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100' : 
+                    v.status === 'Pending' ? 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100' : 
+                    v.status === 'Rejected' ? 'bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100' :
+                    'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-100'
+                  }
+                >
+                  {v.status}
+                </Badge>
+              )
+            }
+          ]}
+          searchKey={["vehicleId.vehicleNumber", "violationType"]}
+          searchPlaceholder="Search by plate or offense..."
+        />
       </div>
     </Layout>
   );

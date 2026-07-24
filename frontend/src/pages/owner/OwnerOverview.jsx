@@ -3,7 +3,10 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
-import { AlertTriangle, ChevronRight } from "lucide-react";
+import { AlertTriangle, ChevronRight, Car, Receipt, CreditCard } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
+import { Badge } from "../../components/ui/Badge.jsx";
+import { Button } from "../../components/ui/Button.jsx";
 
 const OwnerOverview = () => {
   const { user } = useAuth();
@@ -27,124 +30,131 @@ const OwnerOverview = () => {
 
   if (loading) {
     return (
-      <Layout title="User Portal">
+      <Layout title="Citizen Portal">
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
   }
 
-  return (
-    <Layout title="User Portal">
-      <div className="space-y-12 animate-fade-in pb-20">
-        {/* --- CINEMATIC CITIZEN BANNER --- */}
-        <div className="bg-primary-950 rounded-[64px] p-16 text-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] relative overflow-hidden border-b-[16px] border-primary-900 group transition-all duration-1000">
-          <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
-          <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary-900/10 to-transparent skew-x-12 transform origin-top-right"></div>
+  const unpaidViolations = violations.filter((v) => v.status !== "Paid");
+  const totalFineAmount = unpaidViolations.reduce((acc, v) => acc + (v.appliedFineAmount || 0), 0);
 
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
-            <div className="space-y-10">
-              <div className="inline-flex items-center space-x-4 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-2xl shadow-inner">
-                <div className="w-2.5 h-2.5 rounded-full bg-accent-emerald shadow-[0_0_15px_#10b981] animate-pulse"></div>
-                <span className="text-[10px] font-black uppercase tracking-[0.6em] italic text-white/80">
-                  Logged In Successfully
-                </span>
-              </div>
-              <div className="space-y-4">
-                <h2 className="text-8xl font-black uppercase italic tracking-tighter leading-[0.8] group-hover:translate-x-4 transition-transform duration-1000">
-                  {user?.name?.split(" ")[0]} <br />
-                  <span className="text-primary-400">Portal.</span>
-                </h2>
-                <p className="text-white/30 font-bold uppercase text-[11px] tracking-[0.6em] italic border-l-4 border-primary-900 pl-8 max-w-md">
-                  Manage your vehicle details and <br />
-                  view traffic violations records.
-                </p>
-              </div>
+  return (
+    <Layout title="Citizen Portal">
+      <div className="space-y-8 animate-fade-in pb-20">
+        
+        {/* --- CITIZEN BANNER --- */}
+        <div className="bg-primary-900 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden border border-primary-800">
+          <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-600 rounded-full blur-[100px] opacity-20"></div>
+
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="space-y-4">
+              <Badge variant="outline" className="text-white border-white/20 bg-white/10 backdrop-blur-md mb-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></div>
+                Citizen Node Active
+              </Badge>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Welcome back, {user?.name?.split(" ")[0]}
+              </h2>
+              <p className="text-primary-100 max-w-md">
+                Manage your vehicle details, view traffic violation records, and pay any outstanding fines securely.
+              </p>
             </div>
+
+            <Card className="bg-white/10 border-white/20 text-white backdrop-blur-lg min-w-[240px]">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-primary-100 uppercase tracking-wider text-xs">Unpaid Fines</CardDescription>
+                <CardTitle className="text-4xl font-bold text-white">
+                  NPR {totalFineAmount.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="secondary" 
+                  className="w-full mt-2"
+                  onClick={() => navigate("/violations")}
+                  disabled={totalFineAmount === 0}
+                >
+                  <CreditCard size={16} className="mr-2" /> Pay Fines
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <div className="bg-white p-12 rounded-[64px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.05)] border border-neutral-100 space-y-10 relative group overflow-hidden">
-            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
-            <div className="flex items-center justify-between border-b-2 pb-6 border-neutral-50 relative z-10">
-              <div>
-                <h3 className="text-3xl font-black uppercase italic tracking-tighter text-primary-950 underline decoration-accent-crimson/20 underline-offset-8 decoration-4">
-                  Active Logs.
-                </h3>
-                <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest mt-6 italic leading-none">
-                  List of your unpaid fines
-                </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* --- ACTIVE LOGS --- */}
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+              <div className="space-y-1">
+                <CardTitle>Active Violations</CardTitle>
+                <CardDescription>Recent unpaid fines linked to your vehicles.</CardDescription>
               </div>
-              <Link
-                to="/violations"
-                className="text-[10px] font-black uppercase tracking-[0.4em] text-primary-900 hover:text-accent-crimson transition-all flex items-center space-x-3 bg-white px-5 py-2.5 rounded-full border border-neutral-100 shadow-sm">
-                <span>View All</span> <ChevronRight size={14} />
-              </Link>
-            </div>
-            <div className="space-y-6 relative z-10">
-              {violations.slice(0, 4).map((v) => (
-                <div
-                  key={v._id}
-                  className="p-6 rounded-[32px] flex items-center justify-between shadow-lg group hover:bg-slate-50 transition-all border border-neutral-50 bg-white">
-                  <div className="flex items-center space-x-6">
-                    <div className="w-14 h-14 bg-primary-950 text-white rounded-[22px] flex items-center justify-center shadow-2xl group-hover:rotate-6 transition-transform">
-                      <AlertTriangle size={24} />
+              <Button variant="ghost" size="sm" onClick={() => navigate("/violations")} className="text-primary-600 shrink-0">
+                View All <ChevronRight size={16} className="ml-1" />
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-6 flex-1">
+              <div className="space-y-4">
+                {unpaidViolations.slice(0, 4).map((v) => (
+                  <div key={v._id} className="p-4 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-between hover:border-slate-200 transition-colors">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-rose-500 shadow-sm border border-slate-100">
+                        <AlertTriangle size={18} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">{v.violationType}</p>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5">{v.vehicleId?.vehicleNumber}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-lg font-black uppercase italic tracking-tighter text-primary-950 leading-none">
-                        {v.violationType}
-                      </p>
-                      <p className="text-[10px] text-neutral-300 font-bold uppercase tracking-[0.2em] mt-1.5 italic">
-                        {v.vehicleId?.vehicleNumber}
-                      </p>
-                    </div>
+                    <Badge variant="destructive" className="bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-50">
+                      Unpaid
+                    </Badge>
                   </div>
-                  <span
-                    className={`text-[10px] font-black px-4 py-1.5 rounded-xl border uppercase italic tracking-tighter ${v.status === "Paid" ? "bg-green-50 border-green-100 text-green-600" : "bg-red-50 border-red-100 text-red-600"}`}>
-                    {v.status}
-                  </span>
-                </div>
-              ))}
-              {violations.length === 0 && (
-                <div className="p-6 text-center text-neutral-400 italic text-xs uppercase tracking-widest font-black border border-neutral-100 rounded-3xl">
-                  No active logs found.
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-12 flex flex-col">
-            <div className="bg-primary-900 rounded-[64px] p-12 text-white shadow-2xl relative overflow-hidden group hover:scale-[1.02] transition-all duration-700 flex-1 flex flex-col justify-between border-b-[16px] border-black">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-bl-[150px]"></div>
-              <div className="relative z-10 space-y-10">
-                <h4 className="text-3xl font-black uppercase italic tracking-tighter underline decoration-white/20 underline-offset-8">
-                  Fine <br /> Balance.
-                </h4>
-                <div className="space-y-2">
-                  <p className="text-[11px] font-black uppercase text-white/40 tracking-[0.5em] italic">
-                    Total NPR Amount
-                  </p>
-                  <p className="text-8xl font-black italic tracking-tighter leading-none group-hover:scale-110 transition-transform duration-700">
-                    {violations
-                      .filter((v) => v.status !== "Paid")
-                      .reduce(
-                        (acc, v) =>
-                          acc +
-                          (v.appliedFineAmount || 0),
-                        0,
-                      )
-                      .toLocaleString()}
-                  </p>
-                </div>
+                ))}
+                
+                {unpaidViolations.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 text-center h-full">
+                    <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-4">
+                      <Receipt size={32} />
+                    </div>
+                    <h4 className="text-lg font-medium text-slate-900">All Clear!</h4>
+                    <p className="text-sm text-slate-500 mt-1 max-w-[250px]">You have no active violations or unpaid fines on your account.</p>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => navigate("/violations")}
-                className="relative z-10 w-full py-7 bg-white text-primary-900 rounded-[32px] text-[11px] font-black uppercase tracking-[0.4em] italic shadow-2xl hover:bg-neutral-50 transition-all active:scale-95 mt-8">
-                Pay Now
-              </button>
-            </div>
+            </CardContent>
+          </Card>
+
+          {/* --- QUICK ACTIONS --- */}
+          <div className="space-y-6">
+            <Card className="hover:border-primary-500 transition-all cursor-pointer group" onClick={() => navigate("/vehicles")}>
+              <CardContent className="p-8 flex items-center space-x-6">
+                <div className="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center group-hover:bg-primary-600 group-hover:text-white transition-colors">
+                  <Car size={32} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">My Vehicles</h3>
+                  <p className="text-sm text-slate-500 mt-1">Manage registration details and ownership.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-900 text-white border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-white">Violation History</CardTitle>
+                <CardDescription className="text-slate-400">Review all past incidents and payment receipts.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="secondary" className="w-full" onClick={() => navigate("/violations")}>
+                  Access Records Archive
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

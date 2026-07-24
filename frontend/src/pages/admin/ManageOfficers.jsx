@@ -3,7 +3,13 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
-import { UserPlus, Edit3, Trash2 } from "lucide-react";
+import { UserPlus, Edit3, Trash2, X, ShieldAlert } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/Table.jsx";
+import { Badge } from "../../components/ui/Badge.jsx";
+import { Button } from "../../components/ui/Button.jsx";
+import { Input } from "../../components/ui/Input.jsx";
+import { Label } from "../../components/ui/Label.jsx";
 
 const ManageOfficers = () => {
   const { user } = useAuth();
@@ -75,112 +81,28 @@ const ManageOfficers = () => {
     return (
       <Layout title="Manage Police Officers">
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
   }
 
+  const policeOfficers = users.filter((u) => u.role === "TrafficPolice");
+
   return (
     <Layout title="Manage Police Officers">
-      <div className="space-y-10 animate-fade-in pb-20 h-full flex flex-col relative">
-        {/* Modal */}
-        {showModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-xl bg-primary-950/20">
-            <div className="bg-white rounded-[48px] p-12 shadow-2xl max-w-xl w-full border border-neutral-100 space-y-10 animate-slide-up">
-              <div>
-                <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">
-                  {editingId ? "Update" : "Register"} Officer.
-                </h3>
-                <p className="text-[10px] font-black text-neutral-300 uppercase mt-4 italic border-l-4 border-accent-crimson pl-6">
-                  Initialize security credentials for the grid.
-                </p>
-              </div>
-              <form onSubmit={handleOfficerSubmit} className="space-y-6">
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:border-primary-950 uppercase italic"
-                    value={officerForm.fullName}
-                    onChange={(e) =>
-                      setOfficerForm({
-                        ...officerForm,
-                        fullName: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email Address"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:border-primary-950 italic lowercase"
-                    value={officerForm.email}
-                    onChange={(e) =>
-                      setOfficerForm({
-                        ...officerForm,
-                        email: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                  {!editingId && (
-                    <input
-                      type="password"
-                      placeholder="Access Password"
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:border-primary-950 italic uppercase"
-                      value={officerForm.password}
-                      onChange={(e) =>
-                        setOfficerForm({
-                          ...officerForm,
-                          password: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  )}
-                  <input
-                    type="text"
-                    placeholder="Badge Number"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:border-primary-950 italic uppercase"
-                    value={officerForm.badgeNumber}
-                    onChange={(e) =>
-                      setOfficerForm({
-                        ...officerForm,
-                        badgeNumber: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                </div>
-                <div className="flex space-x-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-neutral-400 hover:bg-slate-50 transition-all">
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-[2] py-5 bg-primary-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-black transition-all">
-                    Save Identity
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
+      <div className="space-y-6 animate-fade-in pb-20">
+        
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">
-              Police Officers.
+            <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+              Police Officers
             </h3>
-            <p className="text-[10px] font-black text-neutral-300 uppercase mt-2 italic">
-              Add, update, or deactivate officer accounts
+            <p className="text-sm text-slate-500 mt-1">
+              Add, update, or deactivate officer accounts and manage their grid access.
             </p>
           </div>
-          <button
+          <Button
             onClick={() => {
               setEditingId(null);
               setOfficerForm({
@@ -192,73 +114,160 @@ const ManageOfficers = () => {
               });
               setShowModal(true);
             }}
-            className="bg-primary-950 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center space-x-2 shadow-2xl hover:bg-black transition-all">
-            <UserPlus size={16} /> <span>Add Officer</span>
-          </button>
+          >
+            <UserPlus size={16} className="mr-2" /> Add Officer
+          </Button>
         </div>
-        <div className="bg-white rounded-[56px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col flex-1 min-h-0">
-          <div className="overflow-y-auto custom-scrollbar">
-            <table className="w-full text-left">
-              <thead className="bg-neutral-50/50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
-                <tr>
-                  <th className="px-10 py-7">Name</th>
-                  <th className="px-10 py-7">Badge No.</th>
-                  <th className="px-10 py-7">Email</th>
-                  <th className="px-10 py-7">Status</th>
-                  <th className="px-10 py-7 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-50 text-xs font-black uppercase italic">
-                {users
-                  .filter((u) => u.role === "TrafficPolice")
-                  .map((u) => (
-                    <tr
-                      key={u._id}
-                      className="hover:bg-slate-50 transition-all">
-                      <td className="px-10 py-6 font-black text-primary-950">
-                        {u.fullName}
-                      </td>
-                      <td className="px-10 py-6 text-neutral-400">
-                        {u.badgeNumber || "PENDING"}
-                      </td>
-                      <td className="px-10 py-6 text-neutral-400 lowercase italic">
-                        {u.email}
-                      </td>
-                      <td className="px-10 py-6">
-                        <span className="px-3 py-1 rounded-full text-[9px] font-black border bg-green-50 text-green-600 border-green-100">
-                          ACTIVE
-                        </span>
-                      </td>
-                      <td className="px-10 py-6 text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => {
-                              setEditingId(u._id);
-                              setOfficerForm({
-                                fullName: u.fullName,
-                                email: u.email,
-                                badgeNumber: u.badgeNumber || "",
-                                role: "TrafficPolice",
-                              });
-                              setShowModal(true);
-                            }}
-                            className="p-2 text-primary-900 hover:bg-slate-100 rounded-lg">
-                            <Edit3 size={16} />
-                          </button>
-                          <button
-                            onClick={() => deleteItem(u._id, u.role)}
-                            className="p-2 text-accent-crimson hover:bg-accent-crimson/5 rounded-lg">
-                            <Trash2 size={16} />
-                          </button>
+
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Officer Details</TableHead>
+                  <TableHead>Badge Number</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {policeOfficers.map((u) => (
+                  <TableRow key={u._id}>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
+                          {u.fullName?.charAt(0) || "U"}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        <div>
+                          <p className="font-medium text-slate-900">{u.fullName}</p>
+                          <p className="text-xs text-slate-500">{u.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <ShieldAlert size={14} className="text-slate-400" />
+                        <span className="font-mono text-slate-700">{u.badgeNumber || "PENDING"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="success">ACTIVE</Badge>
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditingId(u._id);
+                          setOfficerForm({
+                            fullName: u.fullName,
+                            email: u.email,
+                            badgeNumber: u.badgeNumber || "",
+                            role: "TrafficPolice",
+                          });
+                          setShowModal(true);
+                        }}
+                      >
+                        <Edit3 size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                        onClick={() => deleteItem(u._id, u.role)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {policeOfficers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-32 text-center text-slate-500">
+                      No police officers registered in the system.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <Card className="w-full max-w-lg shadow-xl">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <CardTitle>{editingId ? "Update Officer" : "Register Officer"}</CardTitle>
+                <CardDescription className="mt-1">
+                  {editingId ? "Modify officer credentials." : "Initialize security credentials for the grid."}
+                </CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowModal(false)}>
+                <X size={20} />
+              </Button>
+            </div>
+            
+            <form onSubmit={handleOfficerSubmit}>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <Label>Full Name *</Label>
+                  <Input
+                    required
+                    type="text"
+                    value={officerForm.fullName}
+                    onChange={(e) => setOfficerForm({ ...officerForm, fullName: e.target.value })}
+                    placeholder="e.g. Ram Bahadur"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email Address *</Label>
+                  <Input
+                    required
+                    type="email"
+                    value={officerForm.email}
+                    onChange={(e) => setOfficerForm({ ...officerForm, email: e.target.value })}
+                    placeholder="e.g. ram@police.gov.np"
+                  />
+                </div>
+                {!editingId && (
+                  <div className="space-y-2">
+                    <Label>Access Password *</Label>
+                    <Input
+                      required
+                      type="password"
+                      value={officerForm.password}
+                      onChange={(e) => setOfficerForm({ ...officerForm, password: e.target.value })}
+                      placeholder="Enter a secure password"
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>Badge Number *</Label>
+                  <Input
+                    required
+                    type="text"
+                    value={officerForm.badgeNumber}
+                    onChange={(e) => setOfficerForm({ ...officerForm, badgeNumber: e.target.value })}
+                    placeholder="e.g. TP-9982"
+                  />
+                </div>
+              </CardContent>
+              <div className="p-6 border-t border-slate-100 flex justify-end space-x-3 bg-slate-50 rounded-b-xl">
+                <Button type="button" variant="ghost" onClick={() => setShowModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingId ? "Save Changes" : "Register Officer"}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </Layout>
   );
 };

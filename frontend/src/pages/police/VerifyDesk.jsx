@@ -3,14 +3,19 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
-import { CheckCircle2, XCircle, Eye } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, ShieldCheck, Loader2 } from "lucide-react";
 import { resolveImageUrl } from "../../utils/helpers.js";
+import { Card, CardContent } from "../../components/ui/Card.jsx";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/Table.jsx";
+import { Badge } from "../../components/ui/Badge.jsx";
+import { Button } from "../../components/ui/Button.jsx";
 
 const VerifyDesk = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const [violations, setViolations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null);
 
   const fetchViolations = async () => {
     try {
@@ -30,12 +35,15 @@ const VerifyDesk = () => {
   }, [user]);
 
   const updateStatus = async (id, status, remarks) => {
+    setActionLoading(id);
     try {
       await api.patch(`/api/violations/${id}/status`, { status, remarks });
       addToast(`Violation ${status.toLowerCase()} successfully.`, "success");
       fetchViolations();
     } catch (err) {
       addToast("Failed to update violation status.", "error");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -48,7 +56,7 @@ const VerifyDesk = () => {
     return (
       <Layout title="Verification Desk">
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
         </div>
       </Layout>
     );
@@ -56,129 +64,122 @@ const VerifyDesk = () => {
 
   return (
     <Layout title="Verification Desk">
-      <div className="space-y-8 animate-fade-in pb-20">
-        <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
-          <div>
-            <h3 className="text-3xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">
-              Verification Desk.
-            </h3>
-            <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.4em] mt-2 italic">
-              Review AI-detected violations before finalizing fines.
-            </p>
-          </div>
+      <div className="space-y-6 animate-fade-in pb-20">
+        <div className="flex flex-col space-y-2 border-b border-slate-200 pb-4">
+          <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Verification Desk
+          </h3>
+          <p className="text-sm text-slate-500">Review and verify AI-detected violations before finalizing the penalty.</p>
         </div>
-        <div className="bg-white rounded-[40px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col max-h-[600px]">
-          <div className="overflow-y-auto custom-scrollbar flex-1">
-            <table className="w-full text-left">
-              <thead className="bg-neutral-50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
-                <tr>
-                  <th className="px-6 py-5">Record</th>
-                  <th className="px-6 py-5">Plate No.</th>
-                  <th className="px-6 py-5">Violation</th>
-                  <th className="px-6 py-5">AI Confidence</th>
-                  <th className="px-6 py-5">Status</th>
-                  <th className="px-6 py-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
-                {violations.map((v) => (
-                  <tr
-                    key={v._id}
-                    className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-6 py-4 text-neutral-300">
-                      #{v._id.slice(-6)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 bg-neutral-100 rounded-lg text-2xs font-black border border-neutral-200">
-                        {v.vehicleId?.vehicleNumber || "UNKNOWN"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-primary-950">
-                      {v.violationType}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-16 bg-neutral-100 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full bg-accent-crimson`}
-                            style={{
-                              width: `${(v.aiConfidence || 0.8) * 100}%`,
-                            }}></div>
-                        </div>
-                        <span className="text-[9px] text-neutral-400">
-                          {(v.aiConfidence * 100 || 80).toFixed(1)}%
+
+        <Card className="shadow-sm border-slate-200">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/80">
+                    <TableHead className="font-semibold text-slate-600 w-[100px]">Record ID</TableHead>
+                    <TableHead className="font-semibold text-slate-600">Plate No.</TableHead>
+                    <TableHead className="font-semibold text-slate-600">Violation Type</TableHead>
+                    <TableHead className="font-semibold text-slate-600">AI Confidence</TableHead>
+                    <TableHead className="font-semibold text-slate-600">Status</TableHead>
+                    <TableHead className="text-right font-semibold text-slate-600">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {violations.map((v) => (
+                    <TableRow key={v._id} className="group hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="font-mono text-xs text-slate-500">
+                        #{v._id.slice(-6)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-mono font-bold bg-slate-100 px-2 py-1 rounded text-slate-800 border border-slate-200">
+                          {v.vehicleId?.vehicleNumber || "UNKNOWN"}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-0.5 rounded-lg border text-[9px] ${
-                          v.status === "Verified"
-                            ? "bg-green-50 text-green-600 border-green-100"
-                            : v.status === "Pending"
-                            ? "bg-yellow-50 text-yellow-600 border-yellow-100"
-                            : v.status === "Rejected"
-                            ? "bg-red-50 text-red-600 border-red-100"
-                            : "bg-blue-50 text-blue-600 border-blue-100"
-                        }`}>
-                        {v.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        {v.status === "Pending" && (
-                          <>
-                            <button
-                              onClick={() =>
-                                updateStatus(
-                                  v._id,
-                                  "Verified",
-                                  "Verified by Officer",
-                                )
-                              }
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                              title="Approve">
-                              <CheckCircle2 size={16} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                updateStatus(
-                                  v._id,
-                                  "Rejected",
-                                  "Manual Rejection",
-                                )
-                              }
-                              className="p-2 text-accent-crimson hover:bg-red-50 rounded-lg"
-                              title="Reject">
-                              <XCircle size={16} />
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() =>
-                            viewEvidence(v.imageUrl || v.evidenceUrl)
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-900">
+                        {v.violationType}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-3 w-32">
+                          <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50">
+                            <div
+                              className={`h-full ${(v.aiConfidence || 0.8) > 0.85 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                              style={{
+                                width: `${(v.aiConfidence || 0.8) * 100}%`,
+                              }}></div>
+                          </div>
+                          <span className="text-xs font-medium text-slate-600 w-10 text-right">
+                            {(v.aiConfidence * 100 || 80).toFixed(1)}%
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={v.status === 'Verified' ? 'default' : v.status === 'Pending' ? 'secondary' : 'destructive'}
+                          className={
+                            v.status === 'Verified' ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200' : 
+                            v.status === 'Pending' ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200' : 
+                            'bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200'
                           }
-                          className="p-2 text-primary-900 hover:bg-primary-50 rounded-lg"
-                          title="See Proof">
-                          <Eye size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {violations.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan="6"
-                      className="px-6 py-12 text-center text-neutral-300 italic">
-                      No violations found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        >
+                          {v.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          {v.status === "Pending" && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={actionLoading === v._id}
+                                onClick={() => updateStatus(v._id, "Verified", "Verified by Officer")}
+                                className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 bg-white"
+                                title="Approve"
+                              >
+                                {actionLoading === v._id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={actionLoading === v._id}
+                                onClick={() => updateStatus(v._id, "Rejected", "Manual Rejection")}
+                                className="text-rose-600 border-rose-200 hover:bg-rose-50 bg-white"
+                                title="Reject"
+                              >
+                                {actionLoading === v._id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => viewEvidence(v.imageUrl || v.evidenceUrl)}
+                            className="text-primary-600 hover:bg-primary-50"
+                            title="View Evidence"
+                          >
+                            <Eye size={16} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {violations.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-32 text-center">
+                        <div className="flex flex-col items-center justify-center text-slate-500">
+                           <ShieldCheck size={32} className="mb-2 text-slate-300" />
+                           <p>No records pending verification.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

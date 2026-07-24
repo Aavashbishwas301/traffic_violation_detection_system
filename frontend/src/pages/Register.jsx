@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Mail, Lock, User, AlertCircle, ArrowLeft, UserCircle, Phone, BadgeCheck, Car, Globe, ArrowRight, Cpu, ShieldCheck } from 'lucide-react';
+import { Shield, Mail, Lock, User, AlertCircle, ArrowLeft, Phone, BadgeCheck, Loader2 } from 'lucide-react';
+import { Input } from '../components/ui/Input.jsx';
+import { Label } from '../components/ui/Label.jsx';
+import { Select } from '../components/ui/Select.jsx';
+import { Button } from '../components/ui/Button.jsx';
 
 const Register = () => {
   const [fullName, setFullName] = useState('');
@@ -40,108 +44,102 @@ const Register = () => {
       login(data);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Protocol Rejected. Ensure data integrity.');
+      setError(err.response?.data?.message || 'Registration failed. Please check the provided information.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white overflow-hidden font-sans selection:bg-primary-950 selection:text-white">
-      {/* Brand Side (Left) - Cinematic Command Center */}
-      <div className="hidden lg:flex lg:w-1/3 bg-primary-950 p-12 flex-col justify-between relative border-r-[12px] border-accent-crimson overflow-hidden">
-        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-        <div className="absolute top-1/2 right-0 w-96 h-96 bg-accent-crimson rounded-full blur-[120px] opacity-10 -mr-48"></div>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50 font-sans">
+      {/* Brand Side (Left) */}
+      <div className="hidden lg:flex lg:w-[45%] bg-primary-900 p-12 flex-col justify-between relative overflow-hidden text-white">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5 mix-blend-overlay"></div>
+        <div className="absolute top-40 right-0 w-[600px] h-[600px] bg-primary-600 rounded-full blur-[120px] opacity-20 -mr-48"></div>
         
         <div className="relative z-10">
-          <Link to="/" className="flex items-center space-x-4 group">
-            <div className="w-12 h-12 bg-white rounded-[18px] flex items-center justify-center shadow-[0_20px_40px_-10px_rgba(255,255,255,0.3)] group-hover:rotate-12 transition-transform duration-700">
-              <Shield className="text-primary-950" size={28} />
+          <Link to="/" className="flex items-center space-x-3 group w-max">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
+              <Shield className="text-primary-900" size={24} />
             </div>
-            <span className="text-3xl font-black tracking-tighter text-white uppercase italic">TVDS <span className="text-white/20">JOIN</span></span>
+            <span className="text-2xl font-bold tracking-tight text-white">TVDS</span>
           </Link>
         </div>
 
-        <div className="relative z-10 space-y-10">
-           <div className="inline-flex items-center space-x-4 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-white/60 text-[10px] font-black uppercase tracking-[0.4em] shadow-inner">
-              <Globe size={12} className="animate-pulse" />
-              <span>Enrollment Protocol Active</span>
+        <div className="relative z-10 space-y-6">
+           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-primary-100 text-xs font-medium">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+              <span>Enrollment Active</span>
            </div>
-           <h1 className="text-7xl font-black text-white leading-[0.85] uppercase italic tracking-tighter">New <br /> Identity <br /> <span className="text-accent-crimson">Node.</span></h1>
-           <p className="text-neutral-400 text-lg font-bold uppercase tracking-widest leading-relaxed italic max-w-sm border-l-4 border-white/10 pl-6">Initialize your digital credentials to integrate with the Nepal safety ecosystem.</p>
+           <h1 className="text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]">
+             Join the <br /> National <br /> Traffic Grid
+           </h1>
+           <p className="text-primary-200 text-lg max-w-md">
+             Register your account to manage vehicles, track violations, or enforce traffic regulations across the city.
+           </p>
         </div>
 
-        <div className="relative z-10 flex items-center space-x-6">
-            <div className="h-0.5 w-12 bg-white/10 rounded-full"></div>
-            <span className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.6em] italic">Authorized Registrar Node © 2026</span>
+        <div className="relative z-10 text-primary-400 text-xs font-medium tracking-wider">
+            © 2026 TVDS GOVERNMENT PORTAL
         </div>
       </div>
 
-      {/* Register Side (Right) - Modern UI */}
-      <div className="flex-1 flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-16 relative animate-fade-in overflow-y-auto bg-slate-50/50">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-[0.02]"></div>
-        
-        <div className="max-w-xl w-full mx-auto space-y-12 relative z-10">
+      {/* Register Side (Right) */}
+      <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-24 py-12 relative animate-fade-in overflow-y-auto">
+        <div className="max-w-xl w-full mx-auto space-y-8">
           <div>
-            <Link to="/login" className="inline-flex items-center text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em] hover:text-primary-950 transition-colors mb-8 group bg-white px-5 py-2 rounded-full border border-neutral-100 shadow-sm">
-              <ArrowLeft size={12} className="mr-2 group-hover:-translate-x-1 transition-transform text-accent-crimson" /> Access Established Node
+            <Link to="/login" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors mb-8 group">
+              <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" /> Back to Login
             </Link>
-            <div className="space-y-4">
-                <h2 className="text-5xl font-black text-primary-950 uppercase italic tracking-tighter leading-none">System Enrollment.</h2>
-                <p className="text-neutral-400 font-black text-[10px] uppercase tracking-[0.4em] mt-2 italic border-l-4 border-accent-crimson pl-6">Map new authorized identifiers to the grid.</p>
+            <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Create Account</h2>
+                <p className="text-slate-500">Enter your details to register in the system.</p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Grid Clearance</label>
-                    <div className="relative group">
-                        <select
-                        className="block w-full px-6 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 outline-none font-black text-xs appearance-none shadow-xl shadow-neutral-100/50 italic uppercase tracking-widest cursor-pointer"
-                        value={role}
-                        onChange={(e) => setRole(e.target.value)}
-                        required
-                        >
-                        <option value="VehicleOwner">Citizen Node</option>
-                        <option value="TrafficPolice">Police Hub</option>
-                        <option value="Admin">Core Admin</option>
-                        </select>
-                        <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-accent-crimson">
-                            <ShieldCheck size={18} />
-                        </div>
-                    </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <Label htmlFor="role">Account Type</Label>
+                    <Select
+                      id="role"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      required
+                    >
+                      <option value="VehicleOwner">Vehicle Owner (Citizen)</option>
+                      <option value="TrafficPolice">Traffic Police Officer</option>
+                      <option value="Admin">System Administrator</option>
+                    </Select>
                 </div>
 
-                <div className="space-y-3">
-                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Mobile Sync Node</label>
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                            <Phone className="text-neutral-200 group-focus-within:text-primary-950 transition-colors" size={18} />
-                        </div>
-                        <input
-                        type="text"
-                        className="block w-full pl-14 pr-6 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none italic tracking-widest"
-                        placeholder="+977 98..."
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        required
+                <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <Input
+                          id="phone"
+                          type="text"
+                          className="pl-10"
+                          placeholder="+977 98..."
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          required
                         />
                     </div>
                 </div>
             </div>
 
-            <div className="space-y-8">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Legal Signature</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                        <UserCircle className="text-neutral-200 group-focus-within:text-primary-950 transition-colors" size={20} />
-                    </div>
-                    <input
+            <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Legal Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <Input
+                        id="fullName"
                         type="text"
-                        className="block w-full pl-14 pr-8 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none uppercase italic tracking-widest"
-                        placeholder="NAME.IDENTITY"
+                        className="pl-10"
+                        placeholder="Ram Bahadur"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
@@ -149,16 +147,15 @@ const Register = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Electronic Mail Node</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                        <Mail className="text-neutral-200 group-focus-within:text-primary-950 transition-colors" size={20} />
-                    </div>
-                    <input
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <Input
+                        id="email"
                         type="email"
-                        className="block w-full pl-14 pr-8 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none italic tracking-widest lowercase"
-                        placeholder="alias@agency.hub"
+                        className="pl-10"
+                        placeholder="name@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -167,24 +164,24 @@ const Register = () => {
                 </div>
 
                 {(role === 'VehicleOwner' || role === 'TrafficPolice') && (
-                  <div className="grid grid-cols-2 gap-4 animate-slide-up">
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Gender</label>
-                        <select
-                            className="block w-full px-6 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 outline-none font-black text-xs shadow-xl shadow-neutral-100/50 uppercase italic tracking-widest cursor-pointer"
+                  <div className="grid grid-cols-2 gap-6 animate-slide-up">
+                    <div className="space-y-2">
+                        <Label htmlFor="gender">Gender</Label>
+                        <Select
+                            id="gender"
                             value={gender}
                             onChange={(e) => setGender(e.target.value)}
                         >
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>
-                        </select>
+                        </Select>
                     </div>
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Date of Birth</label>
-                        <input
+                    <div className="space-y-2">
+                        <Label htmlFor="dob">Date of Birth</Label>
+                        <Input
+                            id="dob"
                             type="date"
-                            className="block w-full px-6 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none uppercase italic tracking-widest"
                             value={dateOfBirth}
                             onChange={(e) => setDateOfBirth(e.target.value)}
                             required
@@ -194,19 +191,18 @@ const Register = () => {
                 )}
 
                 {role === 'TrafficPolice' && (
-                  <div className="space-y-3 animate-slide-up">
-                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Enforcement Badge ID</label>
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                            <BadgeCheck className="text-neutral-200 group-focus-within:text-primary-950 transition-colors" size={20} />
-                        </div>
-                        <input
-                        type="text"
-                        className="block w-full pl-14 pr-8 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none uppercase italic tracking-widest"
-                        placeholder="POL-HUB-X"
-                        value={badgeNumber}
-                        onChange={(e) => setBadgeNumber(e.target.value)}
-                        required
+                  <div className="space-y-2 animate-slide-up">
+                    <Label htmlFor="badge">Enforcement Badge ID</Label>
+                    <div className="relative">
+                        <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <Input
+                          id="badge"
+                          type="text"
+                          className="pl-10"
+                          placeholder="POL-1234"
+                          value={badgeNumber}
+                          onChange={(e) => setBadgeNumber(e.target.value)}
+                          required
                         />
                     </div>
                   </div>
@@ -214,50 +210,43 @@ const Register = () => {
 
                 {role === 'VehicleOwner' && (
                   <>
-                  <div className="space-y-3 animate-slide-up">
-                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Citizenship Number</label>
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                            <Shield className="text-neutral-200 group-focus-within:text-primary-950 transition-colors" size={20} />
-                        </div>
-                        <input
-                        type="text"
-                        className="block w-full pl-14 pr-8 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none uppercase italic tracking-widest"
-                        placeholder="27-01-72-..."
-                        value={citizenshipNumber}
-                        onChange={(e) => setCitizenshipNumber(e.target.value)}
-                        required
+                  <div className="space-y-2 animate-slide-up">
+                    <Label htmlFor="citizenship">Citizenship Number</Label>
+                    <div className="relative">
+                        <Shield className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <Input
+                          id="citizenship"
+                          type="text"
+                          className="pl-10"
+                          placeholder="27-01-72-..."
+                          value={citizenshipNumber}
+                          onChange={(e) => setCitizenshipNumber(e.target.value)}
+                          required
                         />
                     </div>
                   </div>
-                  <div className="space-y-3 animate-slide-up">
-                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Resident Address</label>
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                            <Globe className="text-neutral-200 group-focus-within:text-primary-950 transition-colors" size={20} />
-                        </div>
-                        <input
-                        type="text"
-                        className="block w-full pl-14 pr-8 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none uppercase italic tracking-widest"
-                        placeholder="Kathmandu, Nepal"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        required
-                        />
-                    </div>
+                  <div className="space-y-2 animate-slide-up">
+                    <Label htmlFor="address">Resident Address</Label>
+                    <Input
+                      id="address"
+                      type="text"
+                      placeholder="Kathmandu, Nepal"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      required
+                    />
                   </div>
                   </>
                 )}
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Secure Access Key</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                        <Lock className="text-neutral-200 group-focus-within:text-primary-950 transition-colors" size={20} />
-                    </div>
-                    <input
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <Input
+                        id="password"
                         type="password"
-                        className="block w-full pl-14 pr-8 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none italic tracking-widest uppercase"
+                        className="pl-10"
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -268,33 +257,31 @@ const Register = () => {
             </div>
 
             {error && (
-              <div className="p-6 bg-accent-crimson/5 border border-accent-crimson/10 rounded-[24px] flex items-start space-x-4 text-accent-crimson animate-slide-up shadow-inner">
-                <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] leading-relaxed italic">{error}</p>
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start space-x-3 text-rose-600 animate-slide-up">
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                <p className="text-sm font-medium leading-relaxed">{error}</p>
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className={`group w-full py-6 rounded-[32px] text-white font-black tracking-[0.5em] uppercase text-xs shadow-2xl transition-all active:scale-95 flex items-center justify-center space-x-4 ${
-                loading ? 'bg-neutral-200 cursor-not-allowed text-neutral-400 shadow-none' : 'bg-primary-950 hover:bg-black shadow-primary-950/40 hover:-translate-y-1'
-              }`}
+              className="w-full text-base py-6"
             >
               {loading ? (
-                <Cpu className="animate-spin" size={20} />
-              ) : (
                 <>
-                    <span>Initialize Identity</span>
-                    <ArrowRight className="group-hover:translate-x-2 transition-transform" size={18} />
+                  <Loader2 className="animate-spin mr-2" size={20} />
+                  Registering...
                 </>
+              ) : (
+                "Create Account"
               )}
-            </button>
+            </Button>
           </form>
 
-          <p className="text-center pt-8 border-t border-neutral-100 text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic">
-            Identity already mapped to grid? <Link to="/login" className="text-primary-950 hover:text-accent-crimson transition-all underline underline-offset-8 decoration-accent-crimson/20">Access Grid Node</Link>
-          </p>
+          <div className="pt-6 text-center text-sm text-slate-500">
+            Already have an account? <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">Sign in here</Link>
+          </div>
         </div>
       </div>
     </div>

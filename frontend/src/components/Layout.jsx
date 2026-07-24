@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   Shield, 
   LayoutDashboard, 
-  Upload, 
   History, 
   Settings, 
   LogOut, 
@@ -19,20 +18,19 @@ import {
   Search,
   Camera,
   BarChart3,
-  Users,
   ShieldCheck,
-  Cpu,
   Megaphone,
-  Lock,
-  Globe,
   Activity,
-  Edit3
+  Edit3,
+  Menu,
+  X
 } from 'lucide-react';
 
 const Layout = ({ children, title }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -78,109 +76,126 @@ const Layout = ({ children, title }) => {
   const filteredNav = navItems.filter(item => item.roles.includes(user?.role || ''));
 
   return (
-    <div className="flex h-screen bg-neutral-100 overflow-hidden font-sans selection:bg-primary-950 selection:text-white">
+    <div className="flex h-screen bg-neutral-50 overflow-hidden font-sans text-neutral-900">
+      
+      {/* --- MOBILE OVERLAY --- */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-neutral-900/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* --- SIDEBAR --- */}
-      <aside className="w-72 bg-primary-950 text-white flex flex-col shrink-0 border-r-[8px] border-accent-crimson relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white flex flex-col shrink-0 border-r border-neutral-200 transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         
-        <div className="p-10 flex flex-col space-y-1 relative z-10 border-b border-white/5">
-          <div className="flex items-center space-x-4 group cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <div className="p-2 bg-white rounded-2xl shadow-[0_15px_30px_-5px_rgba(255,255,255,0.2)] group-hover:rotate-12 transition-transform duration-700">
-               <Shield className="text-primary-950 w-7 h-7" />
+        <div className="p-8 flex items-center justify-between border-b border-neutral-100">
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <div className="p-2 bg-primary-900 rounded-lg shadow-sm">
+               <Shield className="text-white w-6 h-6" />
             </div>
-            <span className="text-3xl font-black tracking-tighter uppercase italic leading-none">TVDS <span className="text-white/20 block text-[10px] tracking-[0.5em] mt-1">Traffic System</span></span>
+            <div className="flex flex-col">
+              <span className="text-xl font-bold tracking-tight text-primary-950 leading-none">TVDS</span>
+              <span className="text-xs text-neutral-500 font-medium mt-1">Traffic System</span>
+            </div>
           </div>
+          <button className="lg:hidden p-2 text-neutral-500 hover:bg-neutral-100 rounded-md" onClick={() => setMobileMenuOpen(false)}>
+            <X size={20} />
+          </button>
         </div>
         
-        <nav className="flex-1 px-6 py-10 space-y-2 overflow-y-auto custom-scrollbar relative z-10">
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto custom-scrollbar">
           {filteredNav.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex items-center justify-between px-6 py-4 rounded-[22px] transition-all duration-500 group relative overflow-hidden ${
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
                   isActive 
-                    ? 'bg-white text-primary-950 shadow-2xl' 
-                    : 'text-white/30 hover:bg-white/5 hover:text-white'
+                    ? 'bg-primary-50 text-primary-900 font-semibold' 
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 font-medium'
                 }`}
               >
-                <div className="flex items-center space-x-4 relative z-10">
-                  <item.icon size={18} className={isActive ? 'text-accent-crimson' : 'group-hover:text-accent-crimson group-hover:scale-110 transition-transform duration-500'} />
-                  <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">{item.name}</span>
+                <div className="flex items-center space-x-3">
+                  <item.icon size={18} className={isActive ? 'text-primary-700' : 'text-neutral-400'} />
+                  <span className="text-sm">{item.name}</span>
                 </div>
-                {isActive && <div className="absolute left-0 top-0 h-full w-1.5 bg-accent-crimson animate-pulse"></div>}
-                {isActive && <ChevronRight size={12} className="text-primary-950/20" />}
+                {isActive && <ChevronRight size={16} className="text-primary-400" />}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-8 mt-auto border-t border-white/5 bg-black/40 relative z-10">
-          <div className="flex items-center space-x-5 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white font-black uppercase text-base shadow-inner group cursor-pointer hover:border-white/30 transition-all">
+        <div className="p-6 border-t border-neutral-100 bg-neutral-50/50">
+          <div className="flex items-center space-x-4 mb-6">
+            <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-900 font-bold text-sm">
                {user?.name?.charAt(0)}
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-black truncate uppercase tracking-tighter italic leading-none">{user?.name}</p>
-              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-accent-crimson mt-2 italic">{user?.role}</p>
+              <p className="text-sm font-semibold text-neutral-900 truncate">{user?.name}</p>
+              <p className="text-xs text-neutral-500 font-medium mt-0.5">{user?.role}</p>
             </div>
           </div>
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center justify-center space-x-4 py-4 bg-white/5 text-white/40 hover:text-white hover:bg-accent-crimson rounded-[20px] transition-all duration-500 group border border-white/5 hover:border-transparent active:scale-95"
+            className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-white border border-neutral-200 text-neutral-700 hover:text-red-600 hover:bg-red-50 hover:border-red-100 rounded-xl transition-colors font-medium text-sm"
           >
-            <LogOut size={16} className="group-hover:rotate-180 transition-transform duration-700" />
-            <span className="font-black text-[10px] tracking-[0.4em] uppercase italic">Logout</span>
+            <LogOut size={16} />
+            <span>Logout</span>
           </button>
         </div>
       </aside>
 
       {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-[0.03] pointer-events-none"></div>
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-neutral-50">
         
         {/* Header */}
-        <header className="h-24 bg-white/80 backdrop-blur-3xl border-b border-neutral-200 flex items-center justify-between px-12 shrink-0 shadow-sm relative z-20">
-           <div className="animate-fade-in">
-              <div className="flex items-center space-x-4">
-                 <div className="w-2 h-2 rounded-full bg-accent-emerald shadow-[0_0_10px_#10b981] animate-pulse"></div>
-                 <h2 className="text-3xl font-black text-primary-950 uppercase italic tracking-tighter leading-none">{title}.</h2>
+        <header className="h-20 bg-white border-b border-neutral-200 flex items-center justify-between px-6 lg:px-10 shrink-0 z-20">
+           <div className="flex items-center space-x-4">
+              <button 
+                className="lg:hidden p-2 -ml-2 text-neutral-500 hover:bg-neutral-100 rounded-md" 
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu size={24} />
+              </button>
+              <div className="hidden sm:flex items-center space-x-3">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                 <h2 className="text-xl font-semibold text-neutral-800">{title}</h2>
               </div>
-              <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.5em] mt-3 italic ml-6">System Status: Active & Secure</p>
            </div>
            
-           <div className="flex items-center space-x-10">
-              <div className="hidden lg:flex items-center space-x-4 px-6 py-2.5 rounded-full bg-neutral-50 border border-neutral-200 shadow-inner group cursor-crosshair">
-                 <Activity size={14} className="text-accent-emerald animate-pulse" />
-                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 italic group-hover:text-primary-950 transition-colors">Server Healthy</span>
+           <div className="flex items-center space-x-6">
+              <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
+                 <Activity size={14} className="text-emerald-600" />
+                 <span className="text-xs font-medium text-emerald-700">System Healthy</span>
               </div>
               
-              <div className="flex items-center space-x-6">
-                 <button className="relative p-3 bg-neutral-50 rounded-2xl text-neutral-400 hover:text-primary-950 hover:bg-white hover:shadow-xl transition-all duration-500 group active:scale-90">
+              <div className="flex items-center space-x-4">
+                 <button className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-full relative transition-colors" aria-label="Notifications">
                     <Bell size={20} />
-                    <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-accent-crimson rounded-full border-2 border-white shadow-sm group-hover:scale-125 transition-transform"></span>
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                  </button>
                  
-                 <div className="h-10 w-[2px] bg-neutral-100 rounded-full"></div>
+                 <div className="h-8 w-px bg-neutral-200"></div>
                  
-                 <div className="flex items-center space-x-5 group cursor-pointer" onClick={() => navigate('/settings')}>
+                 <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/settings')}>
                     <div className="text-right hidden sm:block">
-                       <p className="text-sm font-black text-primary-950 uppercase tracking-tighter leading-none italic group-hover:text-accent-crimson transition-colors">{user?.name}</p>
-                       <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.3em] mt-1.5 italic">Identity Node Verified</p>
+                       <p className="text-sm font-semibold text-neutral-800 leading-none">{user?.name}</p>
                     </div>
-                    <div className="w-12 h-12 rounded-[22px] bg-primary-950 flex items-center justify-center border-b-4 border-accent-crimson text-white shadow-xl group-hover:rotate-12 transition-all duration-500 group-hover:scale-105">
-                       <User size={22} />
+                    <div className="w-9 h-9 rounded-full bg-primary-900 flex items-center justify-center text-white">
+                       <User size={18} />
                     </div>
                  </div>
               </div>
            </div>
         </header>
 
-        {/* Content Area - Locked to Viewport with Internal Scroll */}
+        {/* Content Area */}
         <div className="flex-1 overflow-hidden relative z-10 flex flex-col">
-          <div className="flex-1 overflow-y-auto p-12 scroll-smooth custom-scrollbar">
-            <div className="max-w-[1500px] mx-auto relative h-full">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 scroll-smooth custom-scrollbar">
+            <div className="max-w-[1400px] mx-auto w-full">
               {children}
             </div>
           </div>

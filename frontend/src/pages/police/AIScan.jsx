@@ -2,7 +2,11 @@ import React, { useState } from "react";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
-import { Upload, Cpu, Zap } from "lucide-react";
+import { Upload, Cpu, Zap, Loader2, Image as ImageIcon, Video } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
+import { Input } from "../../components/ui/Input.jsx";
+import { Label } from "../../components/ui/Label.jsx";
+import { Button } from "../../components/ui/Button.jsx";
 
 const AIScan = () => {
   const { addToast } = useToast();
@@ -42,69 +46,83 @@ const AIScan = () => {
 
   return (
     <Layout title="AI Detection Console">
-      <div className="max-w-4xl mx-auto space-y-12 animate-fade-in pb-20">
-        <div className="bg-white rounded-[48px] p-12 shadow-2xl border border-neutral-100 space-y-10 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-950/5 rounded-bl-[100px]"></div>
-          <div>
-            <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">
-              AI Scan.
-            </h3>
-            <p className="text-[10px] font-black uppercase text-neutral-400 tracking-[0.4em] mt-2 italic border-l-4 border-accent-crimson pl-6">
-              Upload CCTV footage or images for automated violation
-              detection.
-            </p>
-          </div>
-
-          <form onSubmit={handleAIDetect} className="space-y-8">
-            <div className="border-4 border-dashed border-neutral-100 rounded-[40px] p-12 text-center hover:border-primary-900/20 transition-all group cursor-pointer relative">
-              <input
-                type="file"
-                onChange={(e) => setDetectFile(e.target.files[0])}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              />
-              <div className="space-y-4">
-                <div className="w-20 h-20 bg-primary-50 rounded-3xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
-                  <Upload className="text-primary-900" size={32} />
-                </div>
-                <div>
-                  <p className="text-sm font-black italic text-primary-950 uppercase">
-                    {detectFile
-                      ? detectFile.name
-                      : "Click to Upload CCTV/Photo"}
-                  </p>
-                  <p className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-1 italic">
-                    JPG, PNG, MP4 • MAX 100MB
-                  </p>
-                </div>
+      <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-20">
+        
+        <Card className="border-t-4 border-t-primary-600 shadow-lg overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50 rounded-bl-full -z-10 opacity-50"></div>
+          <CardHeader className="pb-8">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center">
+                <Cpu size={24} />
+              </div>
+              <div>
+                <CardTitle className="text-3xl text-slate-900">AI Scanner Node</CardTitle>
+                <CardDescription className="text-base mt-1">Upload CCTV footage or images for automated violation detection via the Vision Model.</CardDescription>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 italic ml-2">
-                Detection Location
-              </label>
-              <input
-                type="text"
-                value={detectMeta.location}
-                onChange={(e) =>
-                  setDetectMeta({ ...detectMeta, location: e.target.value })
-                }
-                className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-black text-xs outline-none focus:ring-8 focus:ring-primary-900/5 transition-all uppercase italic"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={uploading}
-              className="w-full py-6 bg-primary-950 text-white rounded-[32px] font-black uppercase tracking-[0.5em] text-xs shadow-2xl hover:bg-black transition-all flex items-center justify-center space-x-4">
-              {uploading ? (
-                <Cpu className="animate-spin" size={24} />
-              ) : (
-                <>
-                  <Zap size={18} /> <span>Initiate AI Engine</span>
-                </>
-              )}
-            </button>
-          </form>
-        </div>
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleAIDetect} className="space-y-8">
+              
+              <div className="relative group">
+                <input
+                  type="file"
+                  onChange={(e) => setDetectFile(e.target.files[0])}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  accept="image/jpeg,image/png,video/mp4"
+                />
+                <div className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${detectFile ? 'border-primary-500 bg-primary-50/50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-primary-300'}`}>
+                  <div className="space-y-4">
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-transform duration-500 ${detectFile ? 'bg-primary-100 text-primary-600 scale-110' : 'bg-white text-slate-400 shadow-sm'}`}>
+                      {detectFile ? (
+                        detectFile.type.includes('video') ? <Video size={32} /> : <ImageIcon size={32} />
+                      ) : (
+                        <Upload size={32} className="group-hover:-translate-y-1 transition-transform" />
+                      )}
+                    </div>
+                    <div>
+                      <p className={`text-lg font-bold ${detectFile ? 'text-primary-700' : 'text-slate-700'}`}>
+                        {detectFile ? detectFile.name : "Click or drag to upload footage"}
+                      </p>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mt-2">
+                        JPG, PNG, MP4 • MAX 100MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-slate-900">
+                  Detection Location <span className="text-rose-500">*</span>
+                </Label>
+                <Input
+                  type="text"
+                  value={detectMeta.location}
+                  onChange={(e) =>
+                    setDetectMeta({ ...detectMeta, location: e.target.value })
+                  }
+                  placeholder="e.g., Koteshwor Intersection"
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={uploading || !detectFile}
+                className="w-full py-6 text-base shadow-lg"
+              >
+                {uploading ? (
+                  <><Loader2 className="animate-spin mr-3" size={20} /> Processing via AI Engine...</>
+                ) : (
+                  <><Zap className="mr-2" size={20} /> Initiate Detection Scan</>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
       </div>
     </Layout>
   );

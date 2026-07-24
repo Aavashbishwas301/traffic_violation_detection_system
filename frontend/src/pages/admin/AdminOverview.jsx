@@ -11,13 +11,19 @@ import {
   Camera,
   ChevronRight,
   Database,
+  Users,
+  Megaphone
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/Table.jsx";
+import { Badge } from "../../components/ui/Badge.jsx";
+import { Button } from "../../components/ui/Button.jsx";
 
 const AdminOverview = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
-  const [users, setUsers] = useState([]);
+  const [usersList, setUsersList] = useState([]);
   const [allViolations, setAllViolations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +36,7 @@ const AdminOverview = () => {
           api.get("/api/violations"),
         ]);
         setStats(sRes.data);
-        setUsers(uRes.data || []);
+        setUsersList(uRes.data || []);
         setAllViolations(
           Array.isArray(vRes.data) ? vRes.data : vRes.data.violations || []
         );
@@ -47,207 +53,178 @@ const AdminOverview = () => {
     return (
       <Layout title="Admin Dashboard">
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
   }
 
+  const statCards = [
+    {
+      title: "Total Paid Fines",
+      value: `NPR ${stats?.summary?.totalRevenue?.toLocaleString() ?? 0}`,
+      icon: Zap,
+      colorClass: "text-emerald-600 bg-emerald-50"
+    },
+    {
+      title: "Total Violations",
+      value: stats?.summary?.totalViolations ?? 0,
+      icon: Activity,
+      colorClass: "text-primary-600 bg-primary-50"
+    },
+    {
+      title: "Outstanding Fines",
+      value: `NPR ${stats?.summary?.totalLiability?.toLocaleString() ?? 0}`,
+      icon: Clock,
+      colorClass: "text-amber-600 bg-amber-50"
+    },
+    {
+      title: "Total Vehicles",
+      value: stats?.summary?.totalVehicles ?? 0,
+      icon: Car,
+      colorClass: "text-indigo-600 bg-indigo-50"
+    },
+  ];
+
   return (
-    <Layout title="Admin Dashboard">
-      <div className="space-y-12 animate-fade-in pb-20">
+    <Layout title="Dashboard Overview">
+      <div className="space-y-8 animate-fade-in pb-20">
+        
         {/* --- WELCOME BANNER --- */}
-        <div className="bg-primary-950 rounded-[64px] p-16 text-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] relative overflow-hidden border-b-[16px] border-accent-crimson group transition-all duration-1000">
-          <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
-          <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-12">
-            <div className="space-y-10 text-center lg:text-left">
-              <div className="inline-flex items-center space-x-4 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-2xl shadow-inner">
-                <div className="w-2.5 h-2.5 rounded-full bg-accent-emerald shadow-[0_0_15px_#10b981] animate-pulse"></div>
-                <span className="text-[10px] font-black uppercase tracking-[0.6em] italic text-white/80">
-                  Authorized Command Session
-                </span>
-              </div>
-              <div className="space-y-4">
-                <h2 className="text-8xl font-black uppercase italic tracking-tighter leading-[0.8] group-hover:translate-x-4 transition-transform duration-1000">
-                  {user?.name?.split(" ")[0] || "Admin"} <br />
-                  <span className="text-accent-crimson">Dashboard.</span>
-                </h2>
-                <p className="text-white/30 font-bold uppercase text-[11px] tracking-[0.6em] italic border-l-4 border-accent-crimson pl-8 max-w-md">
-                  Manage officers, vehicles, and violation records easily.
-                </p>
-              </div>
+        <div className="bg-primary-900 rounded-2xl p-8 text-white relative overflow-hidden shadow-lg border border-primary-800">
+          <div className="absolute top-0 right-0 w-full h-full opacity-10 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+          <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-8">
+            <div className="space-y-4">
+              <Badge variant="outline" className="text-white border-white/20 bg-white/10 backdrop-blur-md mb-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></div>
+                Command Session Active
+              </Badge>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Welcome back, {user?.name?.split(" ")[0] || "Admin"}
+              </h2>
+              <p className="text-primary-100 max-w-md">
+                Here's a summary of the traffic violation grid. You can manage officers, vehicles, and violation records from this unified console.
+              </p>
             </div>
 
-            <div className="relative group/stats cursor-crosshair">
-              <div className="bg-white/5 backdrop-blur-3xl p-14 rounded-[56px] border border-white/10 flex flex-col items-center justify-center space-y-4 min-w-[300px] shadow-inner">
-                <p className="text-[11px] font-black text-white/40 uppercase tracking-[0.5em] italic">
-                  Active Officers
-                </p>
-                <p className="text-8xl font-black italic tracking-tighter text-white leading-none group-hover/stats:scale-110 transition-transform duration-700">
-                  {users.filter((u) => u.role === "TrafficPolice").length}
-                </p>
-                <div className="flex items-center space-x-3 text-accent-emerald font-black text-[10px] uppercase tracking-widest bg-accent-emerald/10 px-4 py-1.5 rounded-xl border border-accent-emerald/20">
-                  <Activity size={14} /> <span>Status: Normal</span>
+            <Card className="bg-white/10 border-white/20 text-white backdrop-blur-lg min-w-[240px]">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-primary-100 uppercase tracking-wider text-xs">Active Officers</CardDescription>
+                <CardTitle className="text-5xl font-bold text-white">
+                  {usersList.filter((u) => u.role === "TrafficPolice").length}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="inline-flex items-center space-x-2 text-emerald-300 text-xs font-medium bg-emerald-950/30 px-2.5 py-1 rounded-md border border-emerald-800/50">
+                  <Activity size={12} /> <span>Status: Optimal</span>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
         {/* --- STATS GRID --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {[
-            {
-              label: "Total Paid Fines",
-              value: `NPR ${stats?.summary?.totalRevenue?.toLocaleString() ?? 0}`,
-              icon: Zap,
-              color: "text-green-600",
-              bg: "bg-green-500/5",
-              border: "border-green-500/20",
-            },
-            {
-              label: "Total Violations",
-              value: stats?.summary?.totalViolations ?? 0,
-              icon: Activity,
-              color: "text-primary-950",
-              bg: "bg-primary-900/5",
-              border: "border-primary-900/10",
-            },
-            {
-              label: "Outstanding Fines",
-              value: stats?.summary?.totalLiability?.toLocaleString() ?? 0,
-              icon: Clock,
-              color: "text-yellow-600",
-              bg: "bg-yellow-500/5",
-              border: "border-yellow-500/20",
-            },
-            {
-              label: "Total Vehicles",
-              value: stats?.summary?.totalVehicles ?? 0,
-              icon: Car,
-              color: "text-blue-600",
-              bg: "bg-blue-500/5",
-              border: "border-blue-500/20",
-            },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className={`bg-white p-12 rounded-[56px] shadow-xl border-2 ${s.border} flex flex-col items-center text-center space-y-6 hover:-translate-y-4 transition-all duration-700 relative overflow-hidden group`}>
-              <div
-                className={`w-20 h-20 ${s.bg} rounded-[28px] flex items-center justify-center ${s.color} shadow-inner group-hover:rotate-12 transition-transform duration-700`}>
-                <s.icon size={36} />
-              </div>
-              <div className="space-y-2">
-                <p className="text-[11px] font-black uppercase text-neutral-300 tracking-[0.3em] italic">
-                  {s.label}
-                </p>
-                <p
-                  className={`text-4xl font-black italic tracking-tighter ${s.color}`}>
-                  {s.value}
-                </p>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statCards.map((s, i) => (
+            <Card key={i}>
+              <CardContent className="p-6 flex items-center justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">{s.title}</p>
+                  <p className="text-2xl font-bold text-slate-900">{s.value}</p>
+                </div>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.colorClass}`}>
+                  <s.icon size={24} />
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
-        {/* --- RECENT ACTIVITY --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2 space-y-10">
-            <div className="flex items-center justify-between border-b-2 border-neutral-50 pb-6">
-              <div>
-                <h3 className="text-3xl font-black uppercase italic tracking-tighter text-primary-950 underline decoration-accent-crimson decoration-4 underline-offset-8">
-                  Recent History.
-                </h3>
-                <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest mt-6 italic leading-none">
-                  Last few events caught by traffic cameras
-                </p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* --- RECENT HISTORY TABLE --- */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+              <div className="space-y-1">
+                <CardTitle>Recent Violations</CardTitle>
+                <CardDescription>Latest enforcement events captured by the grid.</CardDescription>
               </div>
-              <Link
-                to="/violation-mgmt"
-                className="text-[10px] font-black uppercase tracking-[0.4em] text-primary-900 hover:text-accent-crimson transition-all flex items-center space-x-3 bg-white px-5 py-2.5 rounded-full border border-neutral-100 shadow-sm">
-                <span>View All</span> <ChevronRight size={14} />
-              </Link>
-            </div>
-            <div className="bg-white rounded-[64px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.05)] border border-neutral-100 overflow-hidden flex flex-col max-h-[500px]">
-              <div className="overflow-y-auto custom-scrollbar flex-1">
-                <table className="w-full text-left">
-                  <tbody className="divide-y divide-neutral-50 text-xs font-black uppercase italic">
-                    {allViolations.slice(0, 7).map((v) => (
-                      <tr
-                        key={v._id}
-                        className="group hover:bg-slate-50 transition-all">
-                        <td className="py-8 pr-6 pl-10">
-                          <div className="flex items-center space-x-6">
-                            <div className="w-14 h-14 bg-primary-950 text-white rounded-[22px] flex items-center justify-center shadow-2xl transition-transform group-hover:rotate-12">
-                              <Camera size={24} />
-                            </div>
-                            <div>
-                              <p className="text-xl text-primary-950 tracking-tighter">
-                                #EVT-{v._id.slice(-6)}
-                              </p>
-                              <p className="text-[10px] text-neutral-300 tracking-[0.3em] uppercase font-bold mt-1">
-                                {v.location}
-                              </p>
-                            </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/violation-mgmt")} className="text-primary-600">
+                View All <ChevronRight size={16} className="ml-1" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Event ID</TableHead>
+                    <TableHead>Vehicle Plate</TableHead>
+                    <TableHead>Violation Type</TableHead>
+                    <TableHead className="text-right">Time</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allViolations.slice(0, 6).map((v) => (
+                    <TableRow key={v._id}>
+                      <TableCell className="font-medium text-slate-900">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500">
+                            <Camera size={14} />
                           </div>
-                        </td>
-                        <td className="py-8 px-6 font-mono text-primary-950">
-                          {v.vehicleId?.vehicleNumber || "UNKNOWN"}
-                        </td>
-                        <td className="py-8 px-6 text-neutral-400 font-black underline decoration-accent-crimson/10 underline-offset-8 decoration-4">
-                          {v.violationType}
-                        </td>
-                        <td className="py-8 pl-10 pr-10 text-right font-black italic text-primary-950 text-lg">
-                          {new Date(v.violationDateTime).toLocaleTimeString(
-                            [],
-                            { hour: "2-digit", minute: "2-digit" }
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+                          <div>
+                            <div>EVT-{v._id.slice(-6)}</div>
+                            <div className="text-xs text-slate-500">{v.location}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono">{v.vehicleId?.vehicleNumber || "UNKNOWN"}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-normal">{v.violationType}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-slate-500">
+                        {new Date(v.violationDateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-          <div className="space-y-12">
-            <div className="bg-primary-900 rounded-[64px] p-12 text-white shadow-2xl relative overflow-hidden group hover:scale-[1.02] transition-all duration-700">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-bl-[150px]"></div>
-              <div className="relative z-10 space-y-8">
-                <h4 className="text-3xl font-black uppercase italic tracking-tighter leading-tight underline decoration-white/20 underline-offset-8">
-                  Quick <br /> Message.
-                </h4>
-                <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest leading-relaxed italic">
-                  Send an important notice to everyone in the system
-                  immediately.
-                </p>
-                <button
-                  onClick={() => navigate("/notifications-mgmt")}
-                  className="w-full py-6 bg-white text-primary-900 rounded-[28px] text-[11px] font-black uppercase tracking-[0.4em] italic shadow-2xl hover:bg-neutral-50 transition-all active:scale-95">
-                  Write Message
-                </button>
-              </div>
-            </div>
+          {/* --- SIDE ACTIONS --- */}
+          <div className="space-y-6">
+            <Card className="bg-slate-900 text-white border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-white">Quick Message</CardTitle>
+                <CardDescription className="text-slate-400">Broadcast a high-priority alert to all connected enforcement nodes.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="secondary" className="w-full justify-center" onClick={() => navigate("/notifications-mgmt")}>
+                  <Megaphone size={16} className="mr-2" /> Broadcast Alert
+                </Button>
+              </CardContent>
+            </Card>
 
-            <div className="bg-white p-12 rounded-[64px] shadow-2xl border border-neutral-100 space-y-10 text-center relative overflow-hidden group">
-              <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto relative z-10 shadow-inner group-hover:rotate-[360deg] transition-transform duration-1000">
-                <Database className="text-primary-900" size={32} />
-              </div>
-              <div className="space-y-4 relative z-10">
-                <h4 className="text-2xl font-black uppercase italic tracking-tighter text-primary-950 leading-none">
-                  System Status.
-                </h4>
-                <div className="space-y-3 pt-2">
-                  <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden shadow-inner">
-                    <div className="bg-accent-emerald h-full w-[99.9%] shadow-[0_0_15px_#10b981] animate-pulse"></div>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center space-x-2">
+                  <Database size={18} className="text-primary-600" />
+                  <span>System Health</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-slate-500">All data centers and neural nodes are operating at optimal capacity.</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-slate-700">Uptime</span>
+                    <span className="text-emerald-600">99.9%</span>
                   </div>
-                  <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest italic">
-                    All systems running at 99.9%
-                  </p>
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full w-[99.9%]"></div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
