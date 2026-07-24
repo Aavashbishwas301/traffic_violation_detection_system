@@ -42,10 +42,10 @@ const Home = () => {
           </div>
         </div>
         <div className="hidden md:flex space-x-8 items-center">
-            <a href="#home" onClick={(e) => scrollToSection(e, 'home')} className="text-xs font-semibold text-primary-950 hover:text-accent-crimson transition-colors ">Home</a>
-            <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="text-xs font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">About Us</a>
-            <a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="text-xs font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">Contact</a>
-            <Link to="/login" className="bg-primary-950 text-white px-8 py-2.5 rounded-xl text-xs font-semibold shadow-2xl hover:bg-black transition-all">Login</Link>
+            <a href="#home" onClick={(e) => scrollToSection(e, 'home')} className="text-sm font-semibold text-primary-950 hover:text-accent-crimson transition-colors ">Home</a>
+            <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="text-sm font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">About Us</a>
+            <a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="text-sm font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">Contact</a>
+            <Link to="/login" className="bg-primary-950 text-white px-8 py-2.5 rounded-xl text-sm font-semibold shadow-2xl hover:bg-black transition-all">Login</Link>
         </div>
       </nav>
 
@@ -157,148 +157,67 @@ const Home = () => {
       </section>
 
       {/* --- ABOUT US SECTION --- */}
-      <section id="about" className="py-40 bg-white px-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/3 h-1/2 bg-primary-900/5 blur-[160px] rounded-full -z-10"></div>
-        <div className="max-w-7xl mx-auto space-y-32">
-          <div className="text-center space-y-10">
-            <div className="inline-flex items-center space-x-4 px-6 py-2.5 rounded-full bg-white border border-slate-100 shadow-xl shadow-slate-200/50">
-                <Globe className="w-3 h-3 text-accent-crimson animate-pulse" />
-                <span className="text-[9px] font-semibold text-primary-950 ">Digital Sovereignty / Safety Grid Alpha</span>
-            </div>
-            <h2 className="text-8xl md:text-[10rem] font-semibold text-primary-950 leading-[0.8]">The <br /><span className="text-accent-crimson underline decoration-slate-100 decoration-8 underline-offset-[24px]">Mission.</span></h2>
-            <p className="text-2xl text-neutral-400 max-w-4xl mx-auto font-bold leading-relaxed pt-12 border-t border-slate-50">
-              Engineering high-fidelity automation to secure the urban transit nodes of Nepal. <br />
-              <span className="text-primary-950 font-semibold">Absolute transparency through distributed neural vision.</span>
+      <section id="about" className="py-24 bg-white px-10 border-t border-slate-50">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16">
+          <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-primary-950 shadow-inner border border-slate-100 flex-shrink-0">
+            <Globe size={40} />
+          </div>
+          <div className="space-y-4 text-center md:text-left">
+            <h3 className="text-4xl font-semibold text-primary-950">Who We Are</h3>
+            <p className="text-xl text-slate-500 leading-relaxed max-w-3xl">
+              We are engineering high-fidelity automation to secure the urban transit nodes of Nepal. Our mission is to eliminate human error in traffic enforcement and ensure absolute transparency through a centralized, AI-driven enforcement grid.
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-            {[
-              { title: 'Neural Precision', desc: 'Leveraging YOLOv8 architectures to eliminate human error in high-speed violation classification.', icon: Cpu, id: 'PROTOCOL_01' },
-              { title: 'Data Integrity', desc: 'Immutable evidence trails verified across the centralized enforcement grid for authorized audit.', icon: Shield, id: 'SECURE_GRID' },
-              { title: 'Citizen Trust', desc: 'Standardized settlement protocols and accessible compliance records for unified road governance.', icon: UserCheck, id: 'PUBLIC_NODE' }
-            ].map((p, i) => (
-              <div key={i} className="space-y-10 group cursor-crosshair">
-                  <div className="flex items-center justify-between">
-                      <div className="w-1.5 h-12 bg-accent-crimson rounded-full group-hover:h-20 transition-all duration-700"></div>
-                      <span className="text-[9px] font-semibold text-neutral-200 ">{p.id}</span>
-                  </div>
-                  <div className="space-y-8">
-                    <div className="w-20 h-20 bg-primary-950 rounded-[28px] flex items-center justify-center text-white shadow-2xl border-b-8 border-black group-hover:rotate-6 transition-transform">
-                        <p.icon size={36} />
-                    </div>
-                    <div className="space-y-4">
-                        <h3 className="text-4xl font-semibold text-primary-950 group-hover:translate-x-2 transition-transform duration-500 underline decoration-slate-100 underline-offset-8 decoration-4">{p.title}.</h3>
-                        <p className="text-neutral-400 text-sm font-semibold leading-relaxed ">{p.desc}</p>
-                    </div>
-                  </div>
-                  <div className="h-1 w-12 bg-slate-100 group-hover:w-full group-hover:bg-primary-950 transition-all duration-1000"></div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center py-20 border-t-4 border-primary-950 relative group">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full w-px h-24 bg-gradient-to-t from-primary-950 to-transparent"></div>
-            <div className="space-y-12">
-                <p className="text-[10px] font-semibold text-neutral-300 ">Architected & Engineered for the Safety Grid by</p>
-                <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-24">
-                  <div className="space-y-2 group/name cursor-crosshair">
-                      <p className="text-4xl font-semibold text-primary-950 group-hover/name:text-accent-crimson transition-colors">Premlata Chaudhary</p>
-                      <p className="text-[8px] font-semibold text-neutral-300">Lead Intelligence Architect</p>
-                  </div>
-                  <div className="hidden md:block w-3 h-3 rotate-45 bg-primary-950"></div>
-                  <div className="space-y-2 group/name cursor-crosshair">
-                      <p className="text-4xl font-semibold text-primary-950 group-hover/name:text-accent-crimson transition-colors">Aavash Bishwas</p>
-                      <p className="text-[8px] font-semibold text-neutral-300">Senior Neural Engineer</p>
-                  </div>
-                </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Vision Statement - Cinematic Banner */}
-        <div className="max-w-7xl mx-auto px-10 pt-20">
-          <section className="bg-primary-950 rounded-[64px] p-20 md:p-32 text-white relative overflow-hidden shadow-[0_60px_120px_-20px_rgba(0,0,0,0.5)] border-b-[16px] border-accent-crimson group">
-            <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-            <div className="absolute top-0 right-0 w-1/3 h-full bg-primary-900/20 -skew-x-12 transform origin-top-right"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-accent-crimson/5 blur-[160px] rounded-full"></div>
-            
-            <div className="relative z-10 space-y-16">
-                <div className="space-y-8">
-                  <p className="text-[10px] font-semibold text-accent-crimson ">Infrastructure Architecture v2.0</p>
-                  <h2 className="text-7xl md:text-9xl font-semibold leading-[0.8] group-hover:translate-x-4 transition-transform duration-1000">Autonomous <br /> Enforcement <br /> <span className="text-accent-crimson">Era.</span></h2>
-                </div>
-                <div className="h-2 w-32 bg-white/10 rounded-full group-hover:w-64 transition-all duration-1000"></div>
-                <p className="text-white/40 text-2xl max-w-3xl font-semibold leading-relaxed ">By digitizing the enforcement pipeline, we create a scalable, objective, and efficient traffic management system optimized for the unique dynamics of Nepal transit nodes.</p>
-                
-                <div className="pt-12 flex items-center space-x-8">
-                  <div className="w-16 h-16 rounded-[24px] bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-xl shadow-inner group-hover:rotate-12 transition-transform">
-                      <Zap className="text-accent-crimson" size={32} />
-                  </div>
-                  <div className="space-y-1">
-                      <p className="text-xs font-semibold text-white">System Health: Nominal</p>
-                      <p className="text-[10px] font-semibold text-white/20 ">Verified Infrastructure Status Node Active</p>
-                  </div>
-                </div>
-            </div>
-          </section>
         </div>
       </section>
 
       {/* --- CONTACT US SECTION --- */}
-      <section id="contact" className="py-40 bg-slate-50 px-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-white -skew-x-12 transform origin-top-right -z-10"></div>
-        <div className="max-w-7xl mx-auto w-full relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 items-start">
-            <div className="lg:col-span-7 space-y-12 animate-fade-in">
-              <div className="space-y-6">
-                <div className="inline-flex items-center space-x-4 px-5 py-2 rounded-full bg-white border border-slate-100 shadow-lg shadow-slate-200/50">
-                  <Globe className="w-2 h-2 text-accent-crimson animate-pulse" />
-                  <span className="text-[10px] font-semibold text-primary-950 ">Communication Node Active</span>
-                </div>
-                <h2 className="text-7xl md:text-[9rem] font-semibold leading-[0.8] text-primary-950 ">
-                  Connect <br />
-                  With the <br /> 
-                  <span className="text-accent-crimson underline decoration-slate-100 decoration-8 underline-offset-[16px]">Grid.</span>
-                </h2>
-                <p className="text-2xl text-neutral-400 font-bold leading-relaxed max-w-2xl pt-8 border-l-[8px] border-primary-950 pl-8">
-                  Direct protocols for <br /> 
-                  <span className="text-primary-950 font-semibold ">System Inquiry & Technical Support.</span>
-                </p>
-              </div>
+      <section id="contact" className="py-32 px-10 relative overflow-hidden bg-primary-950 text-white border-b-8 border-accent-crimson">
+        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay pointer-events-none"></div>
+        <div className="absolute top-0 left-0 w-1/3 h-full bg-accent-crimson/10 blur-[120px] rounded-full pointer-events-none"></div>
+        
+        <div className="max-w-5xl mx-auto relative z-10 flex flex-col md:flex-row items-start justify-between gap-16">
+          <div className="space-y-6 max-w-lg text-center md:text-left">
+            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-md mx-auto md:mx-0 shadow-lg border border-white/10">
+              <MessageSquare size={32} />
             </div>
-
-            <div className="lg:col-span-5 relative animate-slide-up">
-              <div className="absolute -inset-10 bg-primary-900/5 blur-[120px] rounded-full"></div>
-              <div className="relative z-10 grid grid-cols-1 gap-6">
-                {[
-                  { name: 'Electronic Mail', value: 'chaudharypremlata10@gmail.com', icon: Mail, sub: 'Technical Inquiries', action: 'mailto:chaudharypremlata10@gmail.com' },
-                  { name: 'Direct Line', value: '+977 9842026771', icon: Phone, sub: 'Emergency Protocol', action: 'tel:+9779842026771' },
-                  { name: 'HQ Location', value: 'Nepal', icon: MapPin, sub: 'Enforcement Center', action: '#' },
-                  { name: 'Citizen Desk', value: 'Open Support Ticket', icon: MessageSquare, sub: 'Public Assistance', action: '/login?role=owner', prime: true }
-                ].map((p, i) => {
-                  const Icon = p.icon;
-                  const isExternal = p.action.startsWith('mailto:') || p.action.startsWith('tel:') || p.action === '#';
-                  const Wrapper = isExternal ? 'a' : Link;
-                  const extraProps = isExternal ? { href: p.action } : { to: p.action };
-
-                  return (
-                    <Wrapper key={i} {...extraProps} className={`p-8 rounded-[40px] flex items-center justify-between group transition-all duration-700 shadow-xl relative overflow-hidden ${p.prime ? 'bg-primary-950 text-white border-b-8 border-accent-crimson hover:scale-105' : 'bg-white border border-slate-100 hover:border-primary-950 hover:-translate-y-1'}`}>
-                      <div className="flex items-center space-x-6 relative z-10">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-700 ${p.prime ? 'bg-white/10' : 'bg-slate-50 text-primary-950 group-hover:bg-primary-950 group-hover:text-white'}`}>
-                            <Icon size={24} />
-                        </div>
-                        <div>
-                          <p className={`text-[10px] font-semibold mb-1 ${p.prime ? 'text-white/40' : 'text-neutral-300'}`}>{p.sub}</p>
-                          <p className="font-semibold text-xl leading-none">{p.name}</p>
-                          <p className={`text-xs mt-2 font-bold lowercase ${p.prime ? 'text-white/60' : 'text-neutral-400'}`}>{p.value}</p>
-                        </div>
-                      </div>
-                      <ArrowRight className={`opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all ${p.prime ? 'text-accent-crimson' : 'text-primary-950'}`} size={20} />
-                    </Wrapper>
-                  );
-                })}
-              </div>
+            <div>
+              <h3 className="text-5xl font-semibold text-white mb-6">Get in Touch</h3>
+              <p className="text-primary-100 text-lg leading-relaxed">
+                Direct protocols for system inquiry and technical support. Our communication nodes are active 24/7 to assist citizens and enforcement officers alike.
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[32px] shadow-2xl flex-shrink-0 w-full md:w-auto">
+            <div className="space-y-6">
+               <a href="mailto:chaudharypremlata10@gmail.com" className="group flex items-center space-x-4 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                  <div className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center text-accent-crimson group-hover:scale-110 transition-transform">
+                    <Mail size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/50 font-semibold uppercase tracking-wider mb-1">Electronic Mail</p>
+                    <p className="text-white font-medium">chaudharypremlata10@gmail.com</p>
+                  </div>
+               </a>
+               <a href="tel:+9779842026771" className="group flex items-center space-x-4 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                  <div className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center text-accent-crimson group-hover:scale-110 transition-transform">
+                    <Phone size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/50 font-semibold uppercase tracking-wider mb-1">Direct Line</p>
+                    <p className="text-white font-medium">+977 9842026771</p>
+                  </div>
+               </a>
+               <div className="group flex items-center space-x-4 p-4 rounded-2xl hover:bg-white/10 transition-colors cursor-default">
+                  <div className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center text-accent-crimson group-hover:scale-110 transition-transform">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/50 font-semibold uppercase tracking-wider mb-1">HQ Location</p>
+                    <p className="text-white font-medium">Biratnagar, Nepal</p>
+                  </div>
+               </div>
             </div>
           </div>
         </div>
@@ -316,9 +235,9 @@ const Home = () => {
            </div>
            
            <div className="flex flex-wrap justify-center gap-12 border-y border-slate-200/50 w-full py-8">
-              <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="text-xs font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">About Us</a>
-              <a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="text-xs font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">Contact</a>
-              <Link to="/login" className="text-xs font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">Login</Link>
+              <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="text-sm font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">About Us</a>
+              <a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="text-sm font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">Contact</a>
+              <Link to="/login" className="text-sm font-semibold text-neutral-400 hover:text-primary-950 transition-colors ">Login</Link>
            </div>
 
            <div className="w-full flex flex-col md:flex-row items-end justify-between gap-8 text-center md:text-left relative z-10">
