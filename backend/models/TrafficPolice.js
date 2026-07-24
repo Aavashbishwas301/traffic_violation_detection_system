@@ -16,7 +16,7 @@ const trafficPoliceSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    phone: {
+    phoneNumber: {
       type: String,
     },
     badgeNumber: {
@@ -24,16 +24,26 @@ const trafficPoliceSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    rank: {
+    designationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Designation",
+    },
+    gender: {
       type: String,
     },
-    designation: {
+    dateOfBirth: {
+      type: Date,
+    },
+    address: {
       type: String,
     },
     station: {
       type: String,
     },
     joiningDate: {
+      type: Date,
+    },
+    lastLogin: {
       type: Date,
     },
     status: {

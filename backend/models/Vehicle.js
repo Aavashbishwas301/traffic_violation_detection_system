@@ -28,6 +28,9 @@ const vehicleSchema = new mongoose.Schema(
       ],
       default: "4-Wheeler",
     },
+    vehicleCategory: {
+      type: String,
+    },
     brand: {
       type: String,
     },
@@ -40,10 +43,12 @@ const vehicleSchema = new mongoose.Schema(
     engineNumber: {
       type: String,
       unique: true,
+      sparse: true,
     },
     chassisNumber: {
       type: String,
       unique: true,
+      sparse: true,
     },
     manufactureYear: {
       type: Number,
@@ -51,15 +56,24 @@ const vehicleSchema = new mongoose.Schema(
     registrationDate: {
       type: Date,
     },
+    registrationExpiryDate: {
+      type: Date,
+    },
     insuranceStatus: {
       type: String,
       enum: ["Active", "Expired", "N/A"],
       default: "Active",
     },
+    insuranceExpiryDate: {
+      type: Date,
+    },
     taxStatus: {
       type: String,
       enum: ["Paid", "Unpaid", "N/A"],
       default: "Paid",
+    },
+    taxExpiryDate: {
+      type: Date,
     },
     registrationStatus: {
       type: String,

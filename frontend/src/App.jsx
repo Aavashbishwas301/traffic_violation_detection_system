@@ -21,6 +21,7 @@ const About = lazy(() => import("./pages/About.jsx"));
 const Contact = lazy(() => import("./pages/Contact.jsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.jsx"));
 const PaymentStatus = lazy(() => import("./pages/PaymentStatus.jsx"));
+const Notifications = lazy(() => import("./pages/shared/Notifications.jsx"));
 
 // --- Admin Pages ---
 const AdminOverview = lazy(() => import("./pages/admin/AdminOverview.jsx"));
@@ -131,6 +132,9 @@ function App() {
                   <Route path="/payments" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><PaymentHistory /></ProtectedRoute>} />
                   <Route path="/vehicle" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><MyVehicles /></ProtectedRoute>} />
                   <Route path="/complaints" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><SendComplaint /></ProtectedRoute>} />
+
+                  {/* --- Shared Routes --- */}
+                  <Route path="/notifications" element={<ProtectedRoute allowedRoles={["VehicleOwner", "TrafficPolice"]}><Notifications /></ProtectedRoute>} />
 
                   {/* Catch-all redirect */}
                   <Route path="*" element={<Navigate to="/" replace />} />

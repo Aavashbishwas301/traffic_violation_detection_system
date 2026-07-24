@@ -45,8 +45,8 @@ const authUser = async (req, res) => {
             badgeNumber: user.badgeNumber,
             rank: user.rank,
             station: user.station,
-            phone: user.phone,
-            designation: user.designation,
+            phoneNumber: user.phoneNumber,
+            designationId: user.designationId,
             joiningDate: user.joiningDate,
             profilePhoto: user.profilePhoto
         });
@@ -62,7 +62,7 @@ const authUser = async (req, res) => {
 // @route   POST /api/users
 // @access  Public
 const registerUser = async (req, res) => {
-  const { fullName, email, password, role, phone, badgeNumber, citizenshipNumber, address } = req.body;
+  const { fullName, email, password, role, phoneNumber, badgeNumber, citizenshipNumber, address, gender, dateOfBirth, designationId } = req.body;
   const normalizedEmail = email.toLowerCase();
 
   const adminExists = await Admin.findOne({ email: normalizedEmail });
@@ -78,11 +78,11 @@ const registerUser = async (req, res) => {
   const targetRole = role || 'VehicleOwner';
 
   if (targetRole === 'Admin') {
-    user = await Admin.create({ fullName, email: normalizedEmail, password, phone });
+    user = await Admin.create({ fullName, email: normalizedEmail, password, phoneNumber });
   } else if (targetRole === 'TrafficPolice') {
-    user = await TrafficPolice.create({ fullName, email: normalizedEmail, password, phone, badgeNumber });
+    user = await TrafficPolice.create({ fullName, email: normalizedEmail, password, phoneNumber, badgeNumber, designationId, gender, dateOfBirth, address });
   } else {
-    user = await VehicleOwner.create({ fullName, email: normalizedEmail, password, phone, citizenshipNumber, address });
+    user = await VehicleOwner.create({ fullName, email: normalizedEmail, password, phoneNumber, citizenshipNumber, address, gender, dateOfBirth });
   }
 
   if (user) {
@@ -109,7 +109,7 @@ const getUserProfile = async (req, res) => {
       name: req.user.fullName,
       email: req.user.email,
       role: req.user.role,
-      phone: req.user.phone,
+      phoneNumber: req.user.phoneNumber,
       profilePhoto: req.user.profilePhoto
     };
 
@@ -117,7 +117,7 @@ const getUserProfile = async (req, res) => {
         profile.badgeNumber = req.user.badgeNumber;
         profile.rank = req.user.rank;
         profile.station = req.user.station;
-        profile.designation = req.user.designation;
+        profile.designationId = req.user.designationId;
         profile.joiningDate = req.user.joiningDate;
         profile.status = req.user.status;
     }
@@ -140,7 +140,7 @@ const updateUserProfile = async (req, res) => {
   if (user) {
     user.fullName = req.body.fullName || user.fullName;
     user.email = req.body.email || user.email;
-    user.phone = req.body.phone || user.phone;
+    user.phoneNumber = req.body.phoneNumber || user.phoneNumber;
     if (req.body.password) {
       user.password = req.body.password;
     }

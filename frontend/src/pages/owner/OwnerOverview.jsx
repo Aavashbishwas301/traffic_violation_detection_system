@@ -132,7 +132,7 @@ const OwnerOverview = () => {
                       .reduce(
                         (acc, v) =>
                           acc +
-                          (v.fine?.amount || v.ruleId?.fineAmount || 0),
+                          (v.appliedFineAmount || 0),
                         0,
                       )
                       .toLocaleString()}

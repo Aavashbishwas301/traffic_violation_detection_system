@@ -37,8 +37,8 @@ app.use(
   }),
 );
 app.use(compression());
+app.use(cors(corsOptions)); // MUST be before rate limiters!
 app.use(globalLimiter);
-app.use(cors(corsOptions));
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 

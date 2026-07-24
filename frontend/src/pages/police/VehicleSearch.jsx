@@ -76,7 +76,7 @@ const VehicleSearch = () => {
                     Phone Contact
                   </p>
                   <p className="text-xl font-black italic text-primary-950 uppercase">
-                    {searchResult.vehicle.ownerId?.phone || "HIDDEN"}
+                    {searchResult.vehicle.ownerId?.phoneNumber || "HIDDEN"}
                   </p>
                 </div>
               </div>
@@ -99,17 +99,17 @@ const VehicleSearch = () => {
                   <div>
                     <p className="text-white/40 mb-1">Violation Hist.</p>
                     <p className="text-yellow-400 font-black">
-                      {searchResult.violations?.length || 0} EVENTS
+                      {searchResult.history?.length || 0} EVENTS
                     </p>
                   </div>
                   <div>
                     <p className="text-white/40 mb-1">Unpaid Fines</p>
                     <p className="text-accent-crimson font-black">
                       NPR{" "}
-                      {searchResult.violations
+                      {searchResult.history
                         ?.filter((v) => v.status !== "Paid")
                         .reduce(
-                          (acc, v) => acc + (v.fine?.amount || v.ruleId?.fineAmount || 0),
+                          (acc, v) => acc + (v.appliedFineAmount || 0),
                           0
                         ) || 0}
                     </p>

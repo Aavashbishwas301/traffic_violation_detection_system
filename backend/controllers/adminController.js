@@ -1,4 +1,4 @@
-import Violation from "../models/Violation.js";
+import ViolationLine from "../models/ViolationLine.js";
 import { sendNotification } from "../socket.js";
 import Admin from "../models/Admin.js";
 import TrafficPolice from "../models/TrafficPolice.js";
@@ -6,7 +6,7 @@ import VehicleOwner from "../models/VehicleOwner.js";
 import Vehicle from "../models/Vehicle.js";
 import Rule from "../models/Rule.js";
 import Notification from "../models/Notification.js";
-import Fine from "../models/Fine.js";
+import Settlement from "../models/Settlement.js";
 import Complaint from "../models/Complaint.js";
 
 // @desc    Get system-wide stats
@@ -14,9 +14,9 @@ import Complaint from "../models/Complaint.js";
 // @access  Private (Admin/Police)
 const getSystemStats = async (req, res) => {
   try {
-    const totalViolations = await Violation.countDocuments();
-    const pendingViolations = await Violation.countDocuments({
-      status: "Pending",
+    const totalViolations = await ViolationLine.countDocuments();
+    const pendingViolations = await ViolationLine.countDocuments({
+      status: "Unverified",
     });
 
     const adminsCount = await Admin.countDocuments();
@@ -26,21 +26,21 @@ const getSystemStats = async (req, res) => {
 
     const totalVehicles = await Vehicle.countDocuments();
 
-    const revenueData = await Fine.aggregate([
-      { $match: { paymentStatus: "Paid" } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+    const revenueData = await Settlement.aggregate([
+      { $match: { paymentStatus: "Completed" } },
+      { $group: { _id: null, total: { $sum: "$amountPaid" } } },
     ]);
     const totalRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
 
-    const liabilityData = await Fine.aggregate([
-      { $match: { paymentStatus: { $ne: "Paid" } } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+    const liabilityData = await Settlement.aggregate([
+      { $match: { paymentStatus: { $ne: "Completed" } } },
+      { $group: { _id: null, total: { $sum: "$amountPaid" } } },
     ]);
     const totalLiability =
       liabilityData.length > 0 ? liabilityData[0].total : 0;
 
     // Aggregation for monthly violations (last 6 months)
-    const monthlyStats = await Violation.aggregate([
+    const monthlyStats = await ViolationLine.aggregate([
       {
         $group: {
           _id: { $month: "$violationDateTime" },
@@ -51,10 +51,10 @@ const getSystemStats = async (req, res) => {
     ]);
 
     // Aggregation by type
-    const typeStats = await Violation.aggregate([
+    const typeStats = await ViolationLine.aggregate([
       {
         $group: {
-          _id: "$violationType",
+          _id: "$violationTypeId",
           count: { $sum: 1 },
         },
       },
@@ -115,11 +115,6 @@ const assignVehicleOwner = async (req, res) => {
     );
 
     if (vehicle) {
-      // Update all violations for this vehicle to link to the new owner
-      await Violation.updateMany(
-        { vehicleId: vehicle._id, ownerId: null },
-        { ownerId },
-      );
       res.json({ message: "Owner assigned successfully", vehicle });
     } else {
       res.status(404).json({ message: "Vehicle not found" });
@@ -174,8 +169,6 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// ... other methods (getVehicles, deleteVehicle, getRules, updateRule, broadcastMessage, getNotifications)
-
 // @desc    Update/Create financial rule
 // @route   POST /api/admin/rules
 // @access  Private (Admin)
@@ -202,7 +195,6 @@ const updateRule = async (req, res) => {
   }
 };
 
-// Re-implementing missing methods to ensure file is complete
 const getVehicles = async (req, res) => {
   const vehicles = await Vehicle.find({}).populate("ownerId", "fullName email");
   res.json(vehicles);
@@ -224,7 +216,6 @@ const broadcastMessage = async (req, res) => {
     return res.status(400).json({ message: "Title and message are required" });
   }
   try {
-    // Broadcast to ALL roles: Admin, TrafficPolice, VehicleOwner
     const admins = await Admin.find({});
     const police = await TrafficPolice.find({});
     const owners = await VehicleOwner.find({});
@@ -241,7 +232,6 @@ const broadcastMessage = async (req, res) => {
       })),
     ];
 
-    // Bulk insert for performance
     if (allRecipients.length > 0) {
       await Notification.insertMany(
         allRecipients.map((r) => ({
@@ -253,7 +243,6 @@ const broadcastMessage = async (req, res) => {
       );
     }
 
-    // Real-time notification via Socket.io
     sendNotification("notification", {
       title: title || "System Update",
       message,
@@ -331,11 +320,6 @@ const createComplaint = async (req, res) => {
   }
 };
 
-// @desc    Generate detailed time-based reports
-// @route   GET /api/admin/reports/:period (daily, weekly, monthly)
-// @desc    Update officer details
-// @route   PUT /api/admin/officers/:id
-// @access  Private (Admin)
 const updateOfficer = async (req, res) => {
   const { fullName, email, badgeNumber, rank, station, status } = req.body;
   try {
@@ -368,20 +352,20 @@ const getDetailedReports = async (req, res) => {
   startDate.setDate(startDate.getDate() - days);
 
   try {
-    const violations = await Violation.find({
+    const violations = await ViolationLine.find({
       violationDateTime: { $gte: startDate },
     })
       .populate("vehicleId")
-      .populate("ruleId");
+      .populate("violationTypeId");
 
-    const totalFines = await Fine.aggregate([
-      { $match: { issueDate: { $gte: startDate } } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+    const totalFines = await Settlement.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      { $group: { _id: null, total: { $sum: "$amountPaid" } } },
     ]);
 
-    const collectionStats = await Fine.aggregate([
-      { $match: { issueDate: { $gte: startDate }, paymentStatus: "Paid" } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+    const collectionStats = await Settlement.aggregate([
+      { $match: { paymentDate: { $gte: startDate }, paymentStatus: "Completed" } },
+      { $group: { _id: null, total: { $sum: "$amountPaid" } } },
     ]);
 
     res.json({
@@ -398,20 +382,19 @@ const getDetailedReports = async (req, res) => {
 
 const generateGlobalReport = async (req, res) => {
   try {
-    const violations = await Violation.find()
-      .populate("vehicleId")
-      .populate("ownerId");
-    const fines = await Fine.find();
+    const violations = await ViolationLine.find()
+      .populate("vehicleId");
+    const fines = await Settlement.find();
 
     const report = {
       generatedAt: new Date(),
       totalViolations: violations.length,
-      totalFinesIssued: fines.reduce((acc, f) => acc + f.amount, 0),
-      pendingFines: fines.filter((f) => f.paymentStatus !== "Paid").length,
+      totalFinesIssued: fines.reduce((acc, f) => acc + f.amountPaid, 0),
+      pendingFines: fines.filter((f) => f.paymentStatus !== "Completed").length,
       violationSummary: violations.map((v) => ({
         id: v._id,
         plate: v.vehicleId?.vehicleNumber,
-        type: v.violationType,
+        type: v.violationTypeId,
         status: v.status,
       })),
     };

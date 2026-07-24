@@ -1,12 +1,13 @@
 import axios from "axios";
 import FormData from "form-data";
 import fs from "fs";
-import Violation from "../models/Violation.js";
+import ViolationLine from "../models/ViolationLine.js";
+import ViolationType from "../models/ViolationType.js";
 import Vehicle from "../models/Vehicle.js";
 import VehicleOwner from "../models/VehicleOwner.js";
 import Rule from "../models/Rule.js";
 import Evidence from "../models/Evidence.js";
-import Fine from "../models/Fine.js";
+import Settlement from "../models/Settlement.js";
 import { violationQueue } from "../jobs/violationQueue.js";
 
 
@@ -21,10 +22,8 @@ const uploadViolation = async (req, res) => {
   const { location, latitude, longitude, remarks, vehicleNumber } = req.body;
 
   try {
-    // Use location (S3 URL) if available, otherwise fallback to local path
     const fileUri = req.file.location || req.file.path;
 
-    // Add job to BullMQ
     const job = await violationQueue.add('detect-violation', {
       filePath: fileUri,
       originalname: req.file.originalname,
@@ -66,44 +65,47 @@ const manualViolation = async (req, res) => {
     });
 
     if (!vehicle) {
-      // Create as Unregistered — admin can assign owner later
       vehicle = await Vehicle.create({
         vehicleNumber,
         vehicleType: "Other",
-        ownerId: null,
+        vehicleCategory: "Other",
         brand: "Manual",
         model: "Manual",
         registrationStatus: "Unregistered",
       });
     }
 
-    const rule = await Rule.findOne({ violationType });
-    const violation = await Violation.create({
+    const vType = await ViolationType.findOne({ violationName: violationType }).populate("trafficRuleId");
+    const fineAmount = vType?.trafficRuleId?.fineAmount || 1000;
+
+    const violation = await ViolationLine.create({
+      violationTypeId: vType?._id,
       vehicleId: vehicle._id,
-      ownerId: vehicle.ownerId,
       policeId: req.user._id,
-      ruleId: rule?._id,
-      violationType,
       location,
-      status: "Verified", // Manual entry by police is usually pre-verified
+      status: "Verified",
       verifiedAt: Date.now(),
       remarks,
       aiDetected: false,
+      appliedFineAmount: fineAmount,
+      violationDateTime: Date.now()
     });
 
     const fileUri = req.file.location || req.file.path;
 
     await Evidence.create({
-      violationId: violation._id,
+      violationLineId: violation._id,
+      evidenceType: "Image",
       imageUrl: fileUri,
       cameraLocation: location,
       uploadedBy: req.user._id,
     });
 
-    await Fine.create({
-      violationId: violation._id,
-      amount: rule ? rule.fineAmount : 1000,
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    await Settlement.create({
+      violationLineId: violation._id,
+      policeId: req.user._id,
+      amountPaid: 0,
+      paymentMethod: "N/A",
       paymentStatus: "Pending",
     });
 
@@ -122,25 +124,30 @@ const getViolations = async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const total = await Violation.countDocuments();
-    const violations = await Violation.find()
-      .populate("vehicleId")
-      .populate("ownerId", "fullName email phone")
-      .populate("ruleId")
+    const total = await ViolationLine.countDocuments();
+    const violations = await ViolationLine.find()
+      .populate({
+          path: "vehicleId",
+          populate: { path: "ownerId", select: "fullName email phoneNumber" }
+      })
+      .populate("violationTypeId")
+      .populate("policeId")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    // Fetch fine and evidence for each violation
     const results = await Promise.all(
       violations.map(async (v) => {
-        const fine = await Fine.findOne({ violationId: v._id });
-        const evidence = await Evidence.findOne({ violationId: v._id });
+        const settlement = await Settlement.findOne({ violationLineId: v._id });
+        const evidence = await Evidence.findOne({ violationLineId: v._id });
         return {
           ...v._doc,
-          fine,
+          fine: settlement,
           imageUrl: evidence ? evidence.imageUrl : null,
-          evidenceUrl: evidence ? evidence.imageUrl : null, // Frontend uses both
+          evidenceUrl: evidence ? evidence.imageUrl : null,
+          violationType: v.violationTypeId?.violationName,
+          ruleId: v.violationTypeId?.trafficRuleId,
+          ownerId: v.vehicleId?.ownerId
         };
       }),
     );
@@ -165,21 +172,25 @@ const getViolations = async (req, res) => {
 // @access  Private (VehicleOwner)
 const getMyViolations = async (req, res) => {
   try {
-    const violations = await Violation.find({ ownerId: req.user._id })
+    const myVehicles = await Vehicle.find({ ownerId: req.user._id });
+    const vehicleIds = myVehicles.map(v => v._id);
+
+    const violations = await ViolationLine.find({ vehicleId: { $in: vehicleIds } })
       .populate("vehicleId")
-      .populate("ruleId")
+      .populate("violationTypeId")
       .sort({ createdAt: -1 });
 
-    // Fetch fine and evidence for each violation
     const results = await Promise.all(
       violations.map(async (v) => {
-        const fine = await Fine.findOne({ violationId: v._id });
-        const evidence = await Evidence.findOne({ violationId: v._id });
+        const settlement = await Settlement.findOne({ violationLineId: v._id });
+        const evidence = await Evidence.findOne({ violationLineId: v._id });
         return {
           ...v._doc,
-          fine,
+          fine: settlement,
           imageUrl: evidence ? evidence.imageUrl : null,
           evidenceUrl: evidence ? evidence.imageUrl : null,
+          violationType: v.violationTypeId?.violationName,
+          ruleId: v.violationTypeId?.trafficRuleId,
         };
       }),
     );
@@ -196,7 +207,7 @@ const getMyViolations = async (req, res) => {
 // @access  Private (Police/Admin)
 const updateViolation = async (req, res) => {
   try {
-    const violation = await Violation.findById(req.params.id);
+    const violation = await ViolationLine.findById(req.params.id).populate('violationTypeId');
     if (violation) {
       violation.status = req.body.status || violation.status;
       violation.remarks = req.body.remarks || violation.remarks;
@@ -204,17 +215,14 @@ const updateViolation = async (req, res) => {
       if (req.body.status === "Verified") {
         violation.verifiedAt = Date.now();
 
-        // Generate Fine if not exists
-        const existingFine = await Fine.findOne({ violationId: violation._id });
-        if (!existingFine) {
-          const rule = await Rule.findById(violation.ruleId);
-          const dueDate = new Date();
-          dueDate.setDate(dueDate.getDate() + 30); // 30 days due
-
-          await Fine.create({
-            violationId: violation._id,
-            amount: rule ? rule.fineAmount : 1000,
-            dueDate: dueDate,
+        const existingSettlement = await Settlement.findOne({ violationLineId: violation._id });
+        if (!existingSettlement) {
+          const rule = await Rule.findById(violation.violationTypeId?.trafficRuleId);
+          await Settlement.create({
+            violationLineId: violation._id,
+            policeId: req.user._id,
+            amountPaid: 0,
+            paymentMethod: "N/A",
             paymentStatus: "Pending",
           });
         }
@@ -236,11 +244,10 @@ const updateViolation = async (req, res) => {
 // @access  Private (Police/Admin)
 const deleteViolation = async (req, res) => {
   try {
-    const violation = await Violation.findById(req.params.id);
+    const violation = await ViolationLine.findById(req.params.id);
     if (violation) {
-      // Also delete related Evidence and Fine
-      await Evidence.deleteMany({ violationId: violation._id });
-      await Fine.deleteMany({ violationId: violation._id });
+      await Evidence.deleteMany({ violationLineId: violation._id });
+      await Settlement.deleteMany({ violationLineId: violation._id });
       await violation.deleteOne();
       res.json({ message: "Violation and related records removed." });
     } else {

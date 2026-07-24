@@ -118,7 +118,7 @@ const MyViolations = () => {
                 <div className="mt-6 pt-4 border-t border-neutral-50">
                   <div className="flex items-center justify-between mb-3">
                     <p className="font-black text-primary-950 italic text-sm">
-                      NPR {v.fine?.amount || v.ruleId?.fineAmount || "0"}
+                      NPR {v.appliedFineAmount || "0"}
                     </p>
                     <button
                       onClick={() =>

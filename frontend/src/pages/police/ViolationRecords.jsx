@@ -48,7 +48,7 @@ const ViolationRecords = () => {
             `${new Date(v.violationDateTime).toLocaleDateString()},${
               v.vehicleId?.vehicleNumber || "UNKNOWN"
             },${v.violationType},NPR ${
-              v.fine?.amount || v.ruleId?.fineAmount || "0"
+              v.appliedFineAmount || "0"
             },${v.status}`
         )
         .join("\n");
@@ -126,7 +126,7 @@ const ViolationRecords = () => {
                       {v.violationType}
                     </td>
                     <td className="px-6 py-4 text-xs font-black italic text-green-600">
-                      NPR {v.fine?.amount || v.ruleId?.fineAmount || "0"}
+                      NPR {v.appliedFineAmount || "0"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span

@@ -1,13 +1,14 @@
 import Admin from './models/Admin.js';
+import Designation from './models/Designation.js';
 import TrafficPolice from './models/TrafficPolice.js';
 import VehicleOwner from './models/VehicleOwner.js';
 import DrivingLicense from './models/DrivingLicense.js';
 import Vehicle from './models/Vehicle.js';
 import Rule from './models/Rule.js';
-import Violation from './models/Violation.js';
+import ViolationType from './models/ViolationType.js';
+import ViolationLine from './models/ViolationLine.js';
 import Evidence from './models/Evidence.js';
-import Fine from './models/Fine.js';
-import Payment from './models/Payment.js';
+import Settlement from './models/Settlement.js';
 import Complaint from './models/Complaint.js';
 import Notification from './models/Notification.js';
 import connectDB from './config/db.js';
@@ -21,15 +22,16 @@ const seedData = async () => {
 
     // Clear existing data
     await Admin.deleteMany();
+    await Designation.deleteMany();
     await TrafficPolice.deleteMany();
     await VehicleOwner.deleteMany();
     await DrivingLicense.deleteMany();
     await Vehicle.deleteMany();
     await Rule.deleteMany();
-    await Violation.deleteMany();
+    await ViolationType.deleteMany();
+    await ViolationLine.deleteMany();
     await Evidence.deleteMany();
-    await Fine.deleteMany();
-    await Payment.deleteMany();
+    await Settlement.deleteMany();
     await Complaint.deleteMany();
     await Notification.deleteMany();
 
@@ -40,41 +42,59 @@ const seedData = async () => {
       fullName: 'System Administrator',
       email: 'admin@example.com',
       password: 'password123',
-      phone: '9851000000',
+      phoneNumber: '9851000000',
     });
 
-    // 2. Create Traffic Police
+    // 2. Create Designations
+    const inspectorDesig = await Designation.create({
+      designationCode: 'INSP-01',
+      designationName: 'Inspector',
+      rank: 'Inspector',
+      department: 'Traffic Control',
+      hierarchyLevel: 3,
+      minimumServiceYears: 5,
+    });
+
+    // 3. Create Traffic Police
     const police = await TrafficPolice.create({
       fullName: 'Officer Rabin Thapa',
       email: 'police@example.com',
       password: 'password123',
-      phone: '9841000001',
+      phoneNumber: '9841000001',
       badgeNumber: 'TP-2024-001',
-      rank: 'Inspector',
+      designationId: inspectorDesig._id,
       station: 'Metropolitan Traffic Police Division',
-      status: 'Active'
+      status: 'Active',
+      gender: 'Male',
+      dateOfBirth: new Date('1985-05-15'),
+      address: 'Kathmandu, Nepal',
+      joiningDate: new Date('2010-01-01'),
     });
 
-    // 3. Create Vehicle Owners
+    // 4. Create Vehicle Owners
     const owner1 = await VehicleOwner.create({
       fullName: 'Suresh Kumar',
       email: 'owner@example.com',
       password: 'password123',
-      phone: '9812000002',
+      phoneNumber: '9812000002',
       address: 'Koteshwor, Kathmandu',
-      citizenshipNumber: '27-01-72-12345'
+      citizenshipNumber: '27-01-72-12345',
+      gender: 'Male',
+      dateOfBirth: new Date('1990-02-20'),
     });
 
     const owner2 = await VehicleOwner.create({
       fullName: 'Anita Sharma',
       email: 'anita@example.com',
       password: 'ownerpassword',
-      phone: '9812000003',
+      phoneNumber: '9812000003',
       address: 'Lalitpur, Nepal',
-      citizenshipNumber: '28-01-74-67890'
+      citizenshipNumber: '28-01-74-67890',
+      gender: 'Female',
+      dateOfBirth: new Date('1995-08-10'),
     });
 
-    // 4. Create Driving Licenses
+    // 5. Create Driving Licenses
     await DrivingLicense.create({
       ownerId: owner1._id,
       licenseNumber: '01-01-00123456',
@@ -84,7 +104,7 @@ const seedData = async () => {
       status: 'Active'
     });
 
-    // 5. Create Rules
+    // 6. Create Traffic Rules
     const rule1 = await Rule.create({
         violationType: 'No Helmet',
         description: 'Riding a motorcycle without a protective helmet.',
@@ -97,86 +117,76 @@ const seedData = async () => {
         fineAmount: 500
     });
 
-    const rule3 = await Rule.create({
-        violationType: 'Triple Riding',
-        description: 'More than two people on a two-wheeler.',
-        fineAmount: 1500
+    // 7. Create Violation Types
+    const vTypeHelmet = await ViolationType.create({
+        trafficRuleId: rule1._id,
+        violationName: 'No Helmet',
+        description: 'Riding without helmet on 2-wheeler',
+        severityLevel: 'High',
+        isAIEnabled: true
     });
 
-    const rule4 = await Rule.create({
-        violationType: 'Zebra Crossing',
-        description: 'Stopping or driving over a designated pedestrian zebra crossing.',
-        fineAmount: 500
-    });
-
-    const rule5 = await Rule.create({
-        violationType: 'Wrong Way',
-        description: 'Driving in the opposite direction of traffic flow.',
-        fineAmount: 2000
-    });
-
-    const rule6 = await Rule.create({
-        violationType: 'Sidewalk Encroachment',
-        description: 'Driving or parking on the sidewalk meant for pedestrians.',
-        fineAmount: 1000
-    });
-
-    // 6. Create Vehicles
+    // 8. Create Vehicles
     const vehicle1 = await Vehicle.create({
       ownerId: owner1._id,
       vehicleNumber: 'BA 2 PA 1234',
       vehicleType: 'Bike',
+      vehicleCategory: 'Private',
       brand: 'Bajaj',
       model: 'Pulsar 220',
       color: 'Black',
       engineNumber: 'ENG123456',
       chassisNumber: 'CHS123456',
-      manufactureYear: 2021
+      manufactureYear: 2021,
+      registrationDate: new Date('2021-01-01'),
+      registrationExpiryDate: new Date('2031-01-01'),
+      insuranceStatus: 'Active',
+      insuranceExpiryDate: new Date('2025-01-01'),
+      taxStatus: 'Paid',
+      taxExpiryDate: new Date('2025-01-01'),
     });
 
-    const vehicle2 = await Vehicle.create({
-        ownerId: owner2._id,
-        vehicleNumber: 'BA 3 CHA 5678',
-        vehicleType: 'Car',
-        brand: 'Hyundai',
-        model: 'Creta',
-        color: 'White',
-        engineNumber: 'ENG67890',
-        chassisNumber: 'CHS67890',
-        manufactureYear: 2022
-      });
-
-    // 7. Create a Violation
-    const violation = await Violation.create({
+    // 9. Create a Violation Line
+    const violationLine = await ViolationLine.create({
+      violationTypeId: vTypeHelmet._id,
       vehicleId: vehicle1._id,
-      ownerId: owner1._id,
       policeId: police._id,
-      ruleId: rule1._id,
-      violationType: 'No Helmet',
       location: 'New Road Intersection',
+      latitude: 27.7042,
+      longitude: 85.3129,
       aiDetected: true,
       aiConfidence: 0.92,
+      appliedFineAmount: 1000,
       status: 'Verified',
-      remarks: 'Detected by North Camera 02'
+      remarks: 'Detected by North Camera 02',
+      violationDateTime: new Date(),
+      verifiedAt: new Date()
     });
 
-    // 8. Create Evidence
+    // 10. Create Evidence
     await Evidence.create({
-        violationId: violation._id,
+        violationLineId: violationLine._id,
+        evidenceType: 'Image',
         imageUrl: 'uploads/sample_no_helmet.jpg',
         cameraLocation: 'New Road North',
-        uploadedBy: police._id
+        cameraId: 'CAM-02',
+        captureTime: new Date(),
     });
 
-    // 9. Create Fine
-    const fine = await Fine.create({
-        violationId: violation._id,
-        amount: rule1.fineAmount,
-        dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days later
-        paymentStatus: 'Pending'
+    // 11. Create Settlement
+    await Settlement.create({
+        violationLineId: violationLine._id,
+        policeId: police._id,
+        amountPaid: 1000,
+        paymentMethod: 'eSewa',
+        transactionId: 'TXN123456789',
+        receiptNumber: 'RCPT-001',
+        paymentStatus: 'Completed',
+        paymentDate: new Date(),
+        remarks: 'Paid on time'
     });
 
-    // 10. Create Notification
+    // 12. Create Notification
     await Notification.create({
         receiverType: 'VehicleOwner',
         receiverId: owner1._id,

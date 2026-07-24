@@ -64,7 +64,7 @@ const PaymentHistory = () => {
                       {v.violationType}
                     </td>
                     <td className="px-6 py-4 text-xs font-black italic text-green-600">
-                      NPR {v.fine?.amount || v.ruleId?.fineAmount}
+                      NPR {v.appliedFineAmount || "0"}
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-0.5 rounded-lg bg-green-50 text-green-600 border border-green-100 text-[9px]">

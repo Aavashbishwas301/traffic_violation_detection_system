@@ -31,7 +31,7 @@ const FineManagement = () => {
   }, [user]);
 
   const toggleStatus = async (id, currentStatus) => {
-    const newStatus = currentStatus === "Paid" ? "Pending" : "Paid";
+    const newStatus = currentStatus === "Paid" ? "Verified" : "Paid";
     try {
       await api.put(`/api/violations/${id}`, {
         status: newStatus,
@@ -94,7 +94,7 @@ const FineManagement = () => {
                       {v.vehicleId?.vehicleNumber || "UNKNOWN"}
                     </td>
                     <td className="px-10 py-6 font-black text-primary-950 text-sm">
-                      NPR {v.fine?.amount || v.ruleId?.fineAmount}
+                      NPR {v.appliedFineAmount || "0"}
                     </td>
                     <td className="px-10 py-6">
                       <span

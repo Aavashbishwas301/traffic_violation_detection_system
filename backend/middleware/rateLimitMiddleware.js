@@ -5,10 +5,10 @@ import rateLimit from "express-rate-limit";
  * Protects the API from abuse and brute-force attacks.
  */
 
-// Global limiter — 100 requests per 15 minutes per IP
+// Global limiter — 1000 requests per 15 minutes per IP
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 1000,
   message: {
     message: "Too many requests, please try again later.",
   },

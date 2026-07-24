@@ -1,6 +1,5 @@
-import Fine from "../models/Fine.js";
-import Payment from "../models/Payment.js";
-import Violation from "../models/Violation.js";
+import Settlement from "../models/Settlement.js";
+import ViolationLine from "../models/ViolationLine.js";
 import VehicleOwner from "../models/VehicleOwner.js";
 import axios from "axios";
 import crypto from "crypto";
@@ -12,27 +11,30 @@ const initiateKhalti = async (req, res) => {
   const { fineId } = req.body;
 
   try {
-    const fine = await Fine.findById(fineId).populate({
-      path: "violationId",
-      populate: { path: "ownerId" },
+    const settlement = await Settlement.findById(fineId).populate({
+      path: "violationLineId",
+      populate: { path: "vehicleId", populate: { path: "ownerId" } },
     });
 
-    if (!fine)
-      return res.status(404).json({ message: "Fine record not found" });
+    if (!settlement)
+      return res.status(404).json({ message: "Settlement record not found" });
 
-    const violation = fine.violationId;
-    const owner = violation.ownerId;
+    const violation = settlement.violationLineId;
+    const owner = violation.vehicleId?.ownerId;
+    const amount = violation.appliedFineAmount;
+
+    if (!owner) return res.status(400).json({ message: "Owner not found for vehicle" });
 
     const payload = {
       return_url: `${process.env.FRONTEND_URL}/payment-status`,
       website_url: process.env.FRONTEND_URL,
-      amount: fine.amount * 100, // Khalti expects Paisa
-      purchase_order_id: fine._id,
-      purchase_order_name: `Fine for ${violation.violationType}`,
+      amount: amount * 100, // Khalti expects Paisa
+      purchase_order_id: settlement._id,
+      purchase_order_name: `Fine Payment`,
       customer_info: {
         name: owner.fullName,
         email: owner.email,
-        phone: owner.phone || "9800000000",
+        phone: owner.phoneNumber || "9800000000",
       },
     };
 
@@ -73,24 +75,17 @@ const verifyKhalti = async (req, res) => {
     );
 
     if (response.data.status === "Completed") {
-      const fine = await Fine.findById(fineId).populate("violationId");
-      if (fine) {
-        fine.paymentStatus = "Paid";
-        await fine.save();
+      const settlement = await Settlement.findById(fineId).populate("violationLineId");
+      if (settlement) {
+        settlement.paymentStatus = "Completed";
+        settlement.amountPaid = settlement.violationLineId.appliedFineAmount;
+        settlement.transactionId = pidx;
+        settlement.paymentMethod = "Khalti";
+        settlement.paymentDate = Date.now();
+        await settlement.save();
 
-        // Update Violation status
-        await Violation.findByIdAndUpdate(fine.violationId._id, {
+        await ViolationLine.findByIdAndUpdate(settlement.violationLineId._id, {
           status: "Paid",
-        });
-
-        // Create Payment record
-        await Payment.create({
-          fineId: fine._id,
-          ownerId: fine.violationId.ownerId,
-          amount: fine.amount,
-          paymentMethod: "Khalti",
-          transactionId: pidx, // Using pidx as transaction ID
-          paymentDate: Date.now(),
         });
 
         return res.json({ success: true, message: "Payment Verified" });
@@ -110,11 +105,11 @@ const initiateEsewa = async (req, res) => {
   const { fineId } = req.body;
 
   try {
-    const fine = await Fine.findById(fineId);
-    if (!fine) return res.status(404).json({ message: "Fine not found" });
+    const settlement = await Settlement.findById(fineId).populate("violationLineId");
+    if (!settlement) return res.status(404).json({ message: "Settlement not found" });
 
-    const amount = fine.amount;
-    const transaction_uuid = `${fine._id}-${Date.now()}`;
+    const amount = settlement.violationLineId.appliedFineAmount;
+    const transaction_uuid = `${settlement._id}-${Date.now()}`;
     const product_code = process.env.ESEWA_SCD;
     const secret = process.env.ESEWA_SECRET;
 
@@ -163,7 +158,6 @@ const verifyEsewa = async (req, res) => {
     const decoded = JSON.parse(Buffer.from(data, "base64").toString("utf-8"));
     let success = false;
 
-    // Verify eSewa Signature to prevent payment spoofing
     const secret = process.env.ESEWA_SECRET;
     if (!secret) throw new Error("eSewa secret not configured");
 
@@ -171,7 +165,6 @@ const verifyEsewa = async (req, res) => {
       throw new Error("Invalid payload: Missing signature or signed_field_names");
     }
 
-    // Reconstruct message from signed_field_names
     const fields = decoded.signed_field_names.split(",");
     const message = fields.map((field) => `${field}=${decoded[field] || ""}`).join(",");
 
@@ -187,30 +180,24 @@ const verifyEsewa = async (req, res) => {
 
     if (decoded.status === "COMPLETE") {
       const fineId = decoded.transaction_uuid.split("-")[0];
-      const fine = await Fine.findById(fineId).populate("violationId");
+      const settlement = await Settlement.findById(fineId).populate("violationLineId");
 
-      if (fine) {
-        fine.paymentStatus = "Paid";
-        await fine.save();
+      if (settlement) {
+        settlement.paymentStatus = "Completed";
+        settlement.amountPaid = settlement.violationLineId.appliedFineAmount;
+        settlement.paymentMethod = "eSewa";
+        settlement.transactionId = decoded.transaction_code;
+        settlement.paymentDate = Date.now();
+        await settlement.save();
 
-        await Violation.findByIdAndUpdate(fine.violationId._id, {
+        await ViolationLine.findByIdAndUpdate(settlement.violationLineId._id, {
           status: "Paid",
-        });
-
-        await Payment.create({
-          fineId: fine._id,
-          ownerId: fine.violationId.ownerId,
-          amount: fine.amount,
-          paymentMethod: "eSewa",
-          transactionId: decoded.transaction_code,
-          paymentDate: Date.now(),
         });
 
         success = true;
       }
     }
 
-    // Redirect to frontend with result
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const redirectUrl = `${frontendUrl}/payment-status?esewa_status=${success ? "success" : "failure"}&esewa_tx=${decoded.transaction_code || ""}`;
 
@@ -227,28 +214,23 @@ const verifyEsewa = async (req, res) => {
 // @access  Private
 const payFine = async (req, res) => {
   try {
-    const fine = await Fine.findById(req.params.id).populate("violationId");
+    const settlement = await Settlement.findById(req.params.id).populate("violationLineId");
 
-    if (fine) {
-      fine.paymentStatus = "Paid";
-      await fine.save();
+    if (settlement) {
+      settlement.paymentStatus = "Completed";
+      settlement.amountPaid = settlement.violationLineId.appliedFineAmount;
+      settlement.paymentMethod = "Cash";
+      settlement.transactionId = "CASH-" + Date.now();
+      settlement.paymentDate = Date.now();
+      await settlement.save();
 
-      await Violation.findByIdAndUpdate(fine.violationId._id, {
+      await ViolationLine.findByIdAndUpdate(settlement.violationLineId._id, {
         status: "Paid",
       });
 
-      const payment = await Payment.create({
-        fineId: fine._id,
-        ownerId: fine.violationId.ownerId,
-        amount: fine.amount,
-        paymentMethod: "Cash",
-        transactionId: "CASH-" + Date.now(),
-        paymentDate: Date.now(),
-      });
-
-      res.json({ message: "Payment simulated successfully", payment });
+      res.json({ message: "Payment simulated successfully", payment: settlement });
     } else {
-      res.status(404).json({ message: "Fine not found" });
+      res.status(404).json({ message: "Settlement not found" });
     }
   } catch (error) {
     res.status(500).json({ message: "Server Error" });

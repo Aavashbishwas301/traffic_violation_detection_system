@@ -16,18 +16,30 @@ const vehicleOwnerSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    phone: {
-      type: String,
-    },
-    address: {
+    phoneNumber: {
       type: String,
     },
     citizenshipNumber: {
       type: String,
+      required: true,
       unique: true,
+    },
+    address: {
+      type: String,
+    },
+    gender: {
+      type: String,
+    },
+    dateOfBirth: {
+      type: Date,
     },
     profilePhoto: {
       type: String,
+    },
+    status: {
+      type: String,
+      enum: ["Active", "Inactive", "Suspended"],
+      default: "Active",
     },
     resetPasswordToken: {
       type: String,

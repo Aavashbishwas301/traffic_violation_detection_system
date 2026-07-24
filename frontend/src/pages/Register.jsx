@@ -13,6 +13,8 @@ const Register = () => {
   const [badgeNumber, setBadgeNumber] = useState('');
   const [citizenshipNumber, setCitizenshipNumber] = useState('');
   const [address, setAddress] = useState('');
+  const [gender, setGender] = useState('Other');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -28,7 +30,9 @@ const Register = () => {
         email, 
         password, 
         role,
-        phone,
+        phoneNumber: phone,
+        gender,
+        dateOfBirth,
         badgeNumber: role === 'TrafficPolice' ? badgeNumber : undefined,
         citizenshipNumber: role === 'VehicleOwner' ? citizenshipNumber : undefined,
         address: role === 'VehicleOwner' ? address : undefined
@@ -161,6 +165,33 @@ const Register = () => {
                     />
                   </div>
                 </div>
+
+                {(role === 'VehicleOwner' || role === 'TrafficPolice') && (
+                  <div className="grid grid-cols-2 gap-4 animate-slide-up">
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Gender</label>
+                        <select
+                            className="block w-full px-6 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 outline-none font-black text-xs shadow-xl shadow-neutral-100/50 uppercase italic tracking-widest cursor-pointer"
+                            value={gender}
+                            onChange={(e) => setGender(e.target.value)}
+                        >
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em] italic ml-1">Date of Birth</label>
+                        <input
+                            type="date"
+                            className="block w-full px-6 py-5 bg-white border-2 border-neutral-100 rounded-[24px] focus:ring-8 focus:ring-primary-950/5 focus:border-primary-950 transition-all font-black text-xs shadow-xl shadow-neutral-100/50 outline-none uppercase italic tracking-widest"
+                            value={dateOfBirth}
+                            onChange={(e) => setDateOfBirth(e.target.value)}
+                            required
+                        />
+                    </div>
+                  </div>
+                )}
 
                 {role === 'TrafficPolice' && (
                   <div className="space-y-3 animate-slide-up">

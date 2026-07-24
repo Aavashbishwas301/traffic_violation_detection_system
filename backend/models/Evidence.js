@@ -1,15 +1,24 @@
 import mongoose from 'mongoose';
 
 const evidenceSchema = new mongoose.Schema({
-  violationId: {
+  violationLineId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
-    ref: 'Violation',
+    ref: 'ViolationLine',
+  },
+  evidenceType: {
+    type: String,
   },
   imageUrl: {
     type: String,
   },
   videoUrl: {
+    type: String,
+  },
+  processedImageUrl: {
+    type: String,
+  },
+  cameraId: {
     type: String,
   },
   cameraLocation: {

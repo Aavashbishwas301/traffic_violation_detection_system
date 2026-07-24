@@ -1,5 +1,5 @@
 import Vehicle from "../models/Vehicle.js";
-import Violation from "../models/Violation.js";
+import ViolationLine from "../models/ViolationLine.js";
 
 // @desc    Get vehicle by number
 // @route   GET /api/vehicles/:number
@@ -11,7 +11,7 @@ const getVehicleByNumber = async (req, res) => {
     }).populate("ownerId");
     if (vehicle) {
       // Find violations for this vehicle
-      const history = await Violation.find({ vehicleId: vehicle._id }).sort({
+      const history = await ViolationLine.find({ vehicleId: vehicle._id }).sort({
         createdAt: -1,
       });
       res.json({ vehicle, history });

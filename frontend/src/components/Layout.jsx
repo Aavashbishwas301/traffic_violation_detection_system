@@ -61,8 +61,6 @@ const Layout = ({ children, title }) => {
     { name: 'Search Vehicle', icon: Search, path: '/search', roles: ['TrafficPolice'] },
     { name: 'Violation Records', icon: History, path: '/records', roles: ['TrafficPolice'] },
     { name: 'Officer Alerts', icon: Megaphone, path: '/notifications', roles: ['TrafficPolice'] },
-    { name: 'Fine Records', icon: CreditCard, path: '/fines', roles: ['TrafficPolice'] },
-    { name: 'Traffic Stats', icon: BarChart3, path: '/reports', roles: ['TrafficPolice'] },
     
     // --- VEHICLE OWNER ---
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['VehicleOwner'] },

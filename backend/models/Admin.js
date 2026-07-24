@@ -16,8 +16,15 @@ const adminSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    phone: {
+    phoneNumber: {
       type: String,
+    },
+    status: {
+      type: String,
+      default: "Active",
+    },
+    lastLogin: {
+      type: Date,
     },
     profilePhoto: {
       type: String,
