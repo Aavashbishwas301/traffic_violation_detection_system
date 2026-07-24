@@ -4,6 +4,8 @@ import {
   getUsers,
   deleteUser,
   getVehicles,
+  createVehicle,
+  updateVehicle,
   deleteVehicle,
   getRules,
   updateRule,
@@ -34,11 +36,11 @@ router.put("/violations/:id", protect, police, updateViolation);
 // Admin-only management routes
 router.route("/users").get(protect, admin, getUsers);
 router.route("/users/:id").delete(protect, admin, deleteUser);
-router.route("/vehicles").get(protect, admin, getVehicles);
+router.route("/vehicles").get(protect, admin, getVehicles).post(protect, admin, createVehicle);
 router
   .route("/vehicles/unregistered")
   .get(protect, admin, getUnregisteredVehicles);
-router.route("/vehicles/:id").delete(protect, admin, deleteVehicle);
+router.route("/vehicles/:id").put(protect, admin, updateVehicle).delete(protect, admin, deleteVehicle);
 router
   .route("/vehicles/:id/assign-owner")
   .put(protect, admin, assignVehicleOwner);

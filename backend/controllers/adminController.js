@@ -196,8 +196,83 @@ const updateRule = async (req, res) => {
 };
 
 const getVehicles = async (req, res) => {
-  const vehicles = await Vehicle.find({}).populate("ownerId", "fullName email");
+  const vehicles = await Vehicle.find({}).populate("ownerId", "fullName email phoneNumber");
   res.json(vehicles);
+};
+
+const createVehicle = async (req, res) => {
+  const {
+    vehicleNumber,
+    vehicleType,
+    brand,
+    model,
+    color,
+    ownerId,
+  } = req.body;
+
+  if (!vehicleNumber) {
+    return res.status(400).json({ message: "Vehicle number is required" });
+  }
+
+  try {
+    const existing = await Vehicle.findOne({
+      vehicleNumber: vehicleNumber.toUpperCase(),
+    });
+    if (existing) {
+      return res
+        .status(400)
+        .json({
+          message: "Vehicle with this plate number is already registered",
+        });
+    }
+
+    const vehicle = await Vehicle.create({
+      ownerId: ownerId || null,
+      vehicleNumber: vehicleNumber.toUpperCase(),
+      vehicleType: vehicleType || "4-Wheeler",
+      brand: brand || "Unknown",
+      model: model || "Unknown",
+      color: color || "Unknown",
+      registrationStatus: ownerId ? "Registered" : "Unregistered",
+      insuranceStatus: "Active",
+      taxStatus: "Paid",
+    });
+
+    const populatedVehicle = await Vehicle.findById(vehicle._id).populate("ownerId", "fullName email phoneNumber");
+
+    res.status(201).json(populatedVehicle);
+  } catch (error) {
+    console.error("Vehicle Creation Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+const updateVehicle = async (req, res) => {
+  const { vehicleNumber, vehicleType, brand, model, color, ownerId } = req.body;
+  try {
+    const vehicle = await Vehicle.findById(req.params.id);
+    if (vehicle) {
+      vehicle.vehicleNumber = vehicleNumber ? vehicleNumber.toUpperCase() : vehicle.vehicleNumber;
+      vehicle.vehicleType = vehicleType || vehicle.vehicleType;
+      vehicle.brand = brand || vehicle.brand;
+      vehicle.model = model || vehicle.model;
+      vehicle.color = color || vehicle.color;
+      
+      if (ownerId !== undefined) {
+        vehicle.ownerId = ownerId || null;
+        vehicle.registrationStatus = ownerId ? "Registered" : "Unregistered";
+      }
+
+      await vehicle.save();
+      const updatedVehicle = await Vehicle.findById(vehicle._id).populate("ownerId", "fullName email phoneNumber");
+      res.json(updatedVehicle);
+    } else {
+      res.status(404).json({ message: "Vehicle not found" });
+    }
+  } catch (error) {
+    console.error("Vehicle Update Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
 const deleteVehicle = async (req, res) => {
@@ -409,6 +484,8 @@ export {
   getUsers,
   deleteUser,
   getVehicles,
+  createVehicle,
+  updateVehicle,
   deleteVehicle,
   getRules,
   updateRule,

@@ -3,11 +3,12 @@ import redisConnection from '../config/redis.js';
 import axios from 'axios';
 import FormData from 'form-data';
 import fs from 'fs';
-import Violation from '../models/Violation.js';
+import ViolationLine from '../models/ViolationLine.js';
+import ViolationType from '../models/ViolationType.js';
 import Vehicle from '../models/Vehicle.js';
 import Rule from '../models/Rule.js';
 import Evidence from '../models/Evidence.js';
-import Fine from '../models/Fine.js';
+import Settlement from '../models/Settlement.js';
 import { sendNotification } from '../socket.js';
 
 export let violationQueue = null;
@@ -96,35 +97,37 @@ if (redisConnection) {
 
       // 4. Process each detected violation
       for (const dv of detectedViolations) {
-        const rule = await Rule.findOne({ violationType: dv.type });
-        const fineAmount = rule ? rule.fineAmount : 500;
+        const vType = await ViolationType.findOne({ violationName: dv.type }).populate("trafficRuleId");
+        const fineAmount = vType?.trafficRuleId?.fineAmount || 500;
 
-        const violation = await Violation.create({
+        const violation = await ViolationLine.create({
+          violationTypeId: vType?._id,
           vehicleId: vehicle._id,
-          ownerId: actualOwnerId,
           policeId: uploaderId,
-          ruleId: rule ? rule._id : null,
-          violationType: dv.type,
           location: location || "Detected Location",
           latitude,
           longitude,
           aiDetected: true,
           aiConfidence: dv.confidence,
-          status: "Pending",
+          status: "Unverified",
           remarks: remarks || "AI Detected Violation",
+          appliedFineAmount: fineAmount,
+          violationDateTime: Date.now()
         });
 
         await Evidence.create({
-          violationId: violation._id,
+          violationLineId: violation._id,
+          evidenceType: "Image",
           imageUrl: filePath,
           cameraLocation: location || "Static Camera",
           uploadedBy: uploaderId,
         });
 
-        const fine = await Fine.create({
-          violationId: violation._id,
-          amount: fineAmount,
-          dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+        const fine = await Settlement.create({
+          violationLineId: violation._id,
+          policeId: uploaderId,
+          amountPaid: 0,
+          paymentMethod: "N/A",
           paymentStatus: "Pending",
         });
 
