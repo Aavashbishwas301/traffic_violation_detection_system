@@ -15,7 +15,7 @@ import {
   Megaphone
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/Table.jsx";
+import { DataTable } from "../../components/ui/DataTable.jsx";
 import { Badge } from "../../components/ui/Badge.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 
@@ -154,40 +154,48 @@ const AdminOverview = () => {
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Event ID</TableHead>
-                    <TableHead>Vehicle Plate</TableHead>
-                    <TableHead>Violation Type</TableHead>
-                    <TableHead className="text-right">Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allViolations.slice(0, 6).map((v) => (
-                    <TableRow key={v._id}>
-                      <TableCell className="font-medium text-slate-900">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500">
-                            <Camera size={14} />
-                          </div>
-                          <div>
-                            <div>EVT-{v._id.slice(-6)}</div>
-                            <div className="text-xs text-slate-500">{v.location}</div>
-                          </div>
+              <DataTable
+                data={allViolations.slice(0, 6)}
+                pagination={false}
+                columns={[
+                  {
+                    header: "Event ID",
+                    accessorKey: "_id",
+                    cell: (v) => (
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500">
+                          <Camera size={14} />
                         </div>
-                      </TableCell>
-                      <TableCell className="font-mono">{v.vehicleId?.vehicleNumber || "UNKNOWN"}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="font-normal">{v.violationType}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-slate-500">
+                        <div>
+                          <div className="font-medium text-slate-900">EVT-{v._id.slice(-6)}</div>
+                          <div className="text-xs text-slate-500">{v.location}</div>
+                        </div>
+                      </div>
+                    )
+                  },
+                  {
+                    header: "Vehicle Plate",
+                    accessorKey: "vehicleId.vehicleNumber",
+                    cell: (v) => <span className="font-mono">{v.vehicleId?.vehicleNumber || "UNKNOWN"}</span>
+                  },
+                  {
+                    header: "Violation Type",
+                    accessorKey: "violationType",
+                    cell: (v) => <Badge variant="secondary" className="font-normal">{v.violationType}</Badge>
+                  },
+                  {
+                    header: "Time",
+                    accessorKey: "violationDateTime",
+                    align: "right",
+                    className: "text-right",
+                    cell: (v) => (
+                      <span className="text-slate-500">
                         {new Date(v.violationDateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </span>
+                    )
+                  }
+                ]}
+              />
             </CardContent>
           </Card>
 

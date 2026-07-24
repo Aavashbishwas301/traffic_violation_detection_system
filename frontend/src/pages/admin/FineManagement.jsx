@@ -3,6 +3,9 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
+import { DataTable } from "../../components/ui/DataTable.jsx";
+import { Badge } from "../../components/ui/Badge.jsx";
+import { Button } from "../../components/ui/Button.jsx";
 
 const FineManagement = () => {
   const { user } = useAuth();
@@ -56,78 +59,73 @@ const FineManagement = () => {
 
   return (
     <Layout title="Fine Management">
-      <div className="space-y-10 animate-fade-in pb-20 h-full flex flex-col">
-        <div className="flex justify-between items-end border-b-4 border-primary-950 pb-4">
+      <div className="space-y-6 animate-fade-in pb-20 h-full flex flex-col">
+        <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-4xl font-black italic tracking-tighter text-primary-950 uppercase leading-none">
-              Fine Management.
+            <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+              Fine Management
             </h3>
-            <p className="text-[10px] font-black text-neutral-300 uppercase mt-2 tracking-[0.4em] italic">
-              Monitor payments and update fine status
+            <p className="text-sm text-slate-500 mt-1">
+              Monitor payments and update fine status across the system.
             </p>
           </div>
-          <div className="bg-accent-crimson text-white px-4 py-2 rounded-xl font-black text-[10px] italic">
-            OUTSTANDING: NPR {stats?.summary?.totalLiability?.toLocaleString() || 0}
+          <div className="bg-rose-50 text-rose-700 px-4 py-2 rounded-lg font-semibold text-sm border border-rose-100 shadow-sm">
+            Outstanding: NPR {stats?.summary?.totalLiability?.toLocaleString() || 0}
           </div>
         </div>
-        <div className="bg-white rounded-[56px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col flex-1 min-h-0">
-          <div className="overflow-y-auto custom-scrollbar">
-            <table className="w-full text-left">
-              <thead className="bg-neutral-50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
-                <tr>
-                  <th className="px-10 py-7">ID</th>
-                  <th className="px-10 py-7">Vehicle</th>
-                  <th className="px-10 py-7">Amount</th>
-                  <th className="px-10 py-7">Status</th>
-                  <th className="px-10 py-7 text-right">Update</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
-                {allViolations.map((v) => (
-                  <tr
-                    key={v._id}
-                    className="hover:bg-slate-50 transition-colors">
-                    <td className="px-10 py-6 text-neutral-300">
-                      #PAY-{v._id.slice(-6).toUpperCase()}
-                    </td>
-                    <td className="px-10 py-6 text-primary-950">
-                      {v.vehicleId?.vehicleNumber || "UNKNOWN"}
-                    </td>
-                    <td className="px-10 py-6 font-black text-primary-950 text-sm">
-                      NPR {v.appliedFineAmount || "0"}
-                    </td>
-                    <td className="px-10 py-6">
-                      <span
-                        className={`px-3 py-1 rounded-full border text-[9px] ${
-                          v.status === "Paid"
-                            ? "bg-green-50 text-green-600 border-green-100"
-                            : "bg-red-50 text-red-600 border-red-100"
-                        }`}>
-                        {v.status?.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-10 py-6 text-right">
-                      <button
-                        onClick={() => toggleStatus(v._id, v.status)}
-                        className="bg-neutral-900 text-white px-4 py-1.5 rounded-lg text-[10px] font-black hover:bg-black transition-all">
-                        CHANGE STATUS
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {allViolations.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan="5"
-                      className="px-10 py-12 text-center text-neutral-300 italic">
-                      No records found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+
+        <DataTable 
+          data={allViolations}
+          columns={[
+            {
+              header: "Payment ID",
+              accessorKey: "_id",
+              sortable: true,
+              cell: (v) => <span className="font-mono text-slate-500">#PAY-{v._id.slice(-6).toUpperCase()}</span>
+            },
+            {
+              header: "Vehicle",
+              accessorKey: "vehicleId.vehicleNumber",
+              sortable: true,
+              cell: (v) => <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">{v.vehicleId?.vehicleNumber || "UNKNOWN"}</span>
+            },
+            {
+              header: "Amount",
+              accessorKey: "appliedFineAmount",
+              sortable: true,
+              className: "font-semibold text-slate-900",
+              cell: (v) => `NPR ${v.appliedFineAmount || "0"}`
+            },
+            {
+              header: "Status",
+              accessorKey: "status",
+              sortable: true,
+              cell: (v) => (
+                <Badge variant={v.status === 'Paid' ? 'success' : 'destructive'}>
+                  {v.status?.toUpperCase()}
+                </Badge>
+              )
+            },
+            {
+              header: "Update",
+              accessorKey: "actions",
+              sortable: false,
+              align: "right",
+              className: "text-right",
+              cell: (v) => (
+                <Button 
+                  size="sm" 
+                  variant={v.status === 'Paid' ? 'outline' : 'default'}
+                  onClick={() => toggleStatus(v._id, v.status)}
+                >
+                  Change Status
+                </Button>
+              )
+            }
+          ]}
+          searchKey={["_id", "vehicleId.vehicleNumber"]}
+          searchPlaceholder="Search by Payment ID or Vehicle..."
+        />
       </div>
     </Layout>
   );

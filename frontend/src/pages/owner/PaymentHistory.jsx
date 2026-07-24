@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
+import { DataTable } from "../../components/ui/DataTable.jsx";
+import { Badge } from "../../components/ui/Badge.jsx";
 
 const PaymentHistory = () => {
   const { user } = useAuth();
@@ -37,60 +39,55 @@ const PaymentHistory = () => {
   return (
     <Layout title="Make Payments">
       <div className="space-y-6 animate-fade-in pb-20">
-        <h3 className="text-2xl font-black uppercase italic tracking-tighter border-b-4 border-primary-950 pb-2">
-          Payment History
-        </h3>
-        <div className="bg-white rounded-[40px] shadow-2xl border border-neutral-100 overflow-hidden flex flex-col max-h-[600px]">
-          <div className="overflow-y-auto custom-scrollbar flex-1">
-            <table className="w-full text-left">
-              <thead className="bg-neutral-50/50 border-b text-[10px] font-black uppercase tracking-widest text-neutral-400 sticky top-0 z-10 backdrop-blur-md">
-                <tr>
-                  <th className="px-6 py-5">Payment ID</th>
-                  <th className="px-6 py-5">Type</th>
-                  <th className="px-6 py-5">Amount</th>
-                  <th className="px-6 py-5">Status</th>
-                  <th className="px-6 py-5 text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-50 text-[11px] font-black uppercase italic">
-                {paidViolations.map((v) => (
-                  <tr
-                    key={v._id}
-                    className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4 text-neutral-300">
-                      #PAY-{v._id.slice(-8).toUpperCase()}
-                    </td>
-                    <td className="px-6 py-4 text-primary-950">
-                      {v.violationType}
-                    </td>
-                    <td className="px-6 py-4 text-xs font-black italic text-green-600">
-                      NPR {v.appliedFineAmount || "0"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-0.5 rounded-lg bg-green-50 text-green-600 border border-green-100 text-[9px]">
-                        PAID
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right text-neutral-400">
-                      {new Date(
-                        v.updatedAt || v.violationDateTime,
-                      ).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-                {paidViolations.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan="5"
-                      className="px-6 py-12 text-center text-neutral-300 italic">
-                      No payments found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div>
+          <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+            Payment History
+          </h3>
+          <p className="text-sm text-slate-500 mt-1">
+            Review your previously paid traffic violation fines.
+          </p>
         </div>
+        
+        <DataTable 
+          data={paidViolations}
+          columns={[
+            {
+              header: "Payment ID",
+              accessorKey: "_id",
+              sortable: true,
+              cell: (v) => <span className="font-mono text-slate-500">#PAY-{v._id.slice(-8).toUpperCase()}</span>
+            },
+            {
+              header: "Type",
+              accessorKey: "violationType",
+              sortable: true,
+              className: "font-medium text-slate-900"
+            },
+            {
+              header: "Amount",
+              accessorKey: "appliedFineAmount",
+              sortable: true,
+              className: "font-medium text-emerald-600",
+              cell: (v) => `NPR ${v.appliedFineAmount || "0"}`
+            },
+            {
+              header: "Status",
+              accessorKey: "status",
+              sortable: true,
+              cell: () => <Badge variant="success">PAID</Badge>
+            },
+            {
+              header: "Date",
+              accessorKey: "updatedAt",
+              sortable: true,
+              align: "right",
+              className: "text-right text-slate-500",
+              cell: (v) => new Date(v.updatedAt || v.violationDateTime).toLocaleDateString()
+            }
+          ]}
+          searchKey={["_id", "violationType"]}
+          searchPlaceholder="Search payments..."
+        />
       </div>
     </Layout>
   );

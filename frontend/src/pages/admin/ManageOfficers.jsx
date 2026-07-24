@@ -5,7 +5,7 @@ import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
 import { UserPlus, Edit3, Trash2, X, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/Table.jsx";
+import { DataTable } from "../../components/ui/DataTable.jsx";
 import { Badge } from "../../components/ui/Badge.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 import { Input } from "../../components/ui/Input.jsx";
@@ -119,79 +119,81 @@ const ManageOfficers = () => {
           </Button>
         </div>
 
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Officer Details</TableHead>
-                  <TableHead>Badge Number</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {policeOfficers.map((u) => (
-                  <TableRow key={u._id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
-                          {u.fullName?.charAt(0) || "U"}
-                        </div>
-                        <div>
-                          <p className="font-medium text-slate-900">{u.fullName}</p>
-                          <p className="text-xs text-slate-500">{u.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <ShieldAlert size={14} className="text-slate-400" />
-                        <span className="font-mono text-slate-700">{u.badgeNumber || "PENDING"}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="success">ACTIVE</Badge>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setEditingId(u._id);
-                          setOfficerForm({
-                            fullName: u.fullName,
-                            email: u.email,
-                            badgeNumber: u.badgeNumber || "",
-                            role: "TrafficPolice",
-                          });
-                          setShowModal(true);
-                        }}
-                      >
-                        <Edit3 size={16} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                        onClick={() => deleteItem(u._id, u.role)}
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {policeOfficers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-32 text-center text-slate-500">
-                      No police officers registered in the system.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <DataTable 
+          data={policeOfficers}
+          columns={[
+            {
+              header: "Officer Details",
+              accessorKey: "fullName",
+              sortable: true,
+              cell: (u) => (
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
+                    {u.fullName?.charAt(0) || "U"}
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-900">{u.fullName}</p>
+                    <p className="text-xs text-slate-500">{u.email}</p>
+                  </div>
+                </div>
+              )
+            },
+            {
+              header: "Badge Number",
+              accessorKey: "badgeNumber",
+              sortable: true,
+              cell: (u) => (
+                <div className="flex items-center space-x-2">
+                  <ShieldAlert size={14} className="text-slate-400" />
+                  <span className="font-mono text-slate-700">{u.badgeNumber || "PENDING"}</span>
+                </div>
+              )
+            },
+            {
+              header: "Status",
+              accessorKey: "status",
+              sortable: false,
+              cell: () => <Badge variant="success">ACTIVE</Badge>
+            },
+            {
+              header: "Actions",
+              accessorKey: "actions",
+              sortable: false,
+              align: "right",
+              className: "text-right space-x-2",
+              cell: (u) => (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setEditingId(u._id);
+                      setOfficerForm({
+                        fullName: u.fullName,
+                        email: u.email,
+                        badgeNumber: u.badgeNumber || "",
+                        role: "TrafficPolice",
+                      });
+                      setShowModal(true);
+                    }}
+                  >
+                    <Edit3 size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                    onClick={() => deleteItem(u._id, u.role)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </>
+              )
+            }
+          ]}
+          searchKey={["fullName", "email", "badgeNumber"]}
+          searchPlaceholder="Search officers by name, email or badge..."
+        />
 
       </div>
 
