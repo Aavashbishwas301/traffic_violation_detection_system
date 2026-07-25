@@ -64,7 +64,7 @@ const Layout = ({ children, title }) => {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['VehicleOwner'] },
     { name: 'My Violations', icon: FileText, path: '/violations', roles: ['VehicleOwner'] },
     { name: 'My Photos', icon: Image, path: '/gallery', roles: ['VehicleOwner'] },
-    { name: 'Make Payments', icon: CreditCard, path: '/payments', roles: ['VehicleOwner'] },
+    { name: 'Payment History', icon: CreditCard, path: '/payments', roles: ['VehicleOwner'] },
     { name: 'My Vehicles', icon: Car, path: '/vehicle', roles: ['VehicleOwner'] },
     { name: 'Notifications', icon: Bell, path: '/notifications', roles: ['VehicleOwner'] },
     { name: 'Send Complaint', icon: MessageSquare, path: '/complaints', roles: ['VehicleOwner'] },

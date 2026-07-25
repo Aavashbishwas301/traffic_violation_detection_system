@@ -38,6 +38,14 @@ const initiateKhalti = async (req, res) => {
       },
     };
 
+    if (process.env.KH_SECRET_KEY === "Key-Your-Secret-Key" || !process.env.KH_SECRET_KEY) {
+      console.log("Using Mock Khalti Gateway (Placeholder Key Detected)");
+      return res.json({
+        pidx: `mock-khalti-${Date.now()}`,
+        payment_url: `${process.env.FRONTEND_URL}/payment-status?pidx=mock-khalti-${Date.now()}&purchase_order_id=${settlement._id}`
+      });
+    }
+
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/initiate/",
       payload,
@@ -63,6 +71,31 @@ const verifyKhalti = async (req, res) => {
   const { pidx, fineId } = req.body;
 
   try {
+    if (pidx.startsWith("mock-khalti-")) {
+      console.log("Verifying Mock Khalti Transaction");
+      const settlement = await Settlement.findById(fineId).populate("violationLineId");
+      if (settlement) {
+        settlement.paymentStatus = "Completed";
+        settlement.amountPaid = settlement.violationLineId.appliedFineAmount;
+        settlement.transactionId = pidx;
+        settlement.paymentMethod = "Khalti";
+        settlement.paymentDate = Date.now();
+        await settlement.save();
+
+        const violation = await ViolationLine.findById(settlement.violationLineId._id);
+        if (violation && violation.status !== "Paid") {
+          violation.statusHistory.push({
+            status: "Paid",
+            remarks: "Payment verified via Khalti (Mock)"
+          });
+          violation.status = "Paid";
+          await violation.save();
+        }
+        return res.json({ success: true, message: "Payment Verified (Mock)" });
+      }
+      return res.status(400).json({ success: false, message: "Payment not completed" });
+    }
+
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/lookup/",
       { pidx },

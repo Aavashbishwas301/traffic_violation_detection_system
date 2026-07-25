@@ -26,7 +26,7 @@ const PaymentHistory = () => {
 
   if (loading) {
     return (
-      <Layout title="Make Payments">
+      <Layout title="Payment History">
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
         </div>
@@ -37,7 +37,7 @@ const PaymentHistory = () => {
   const paidViolations = violations.filter((v) => v.status === "Paid");
 
   return (
-    <Layout title="Make Payments">
+    <Layout title="Payment History">
       <div className="space-y-6 animate-fade-in pb-20">
         <div>
           <h3 className="text-2xl font-bold tracking-tight text-slate-900">

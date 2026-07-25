@@ -41,7 +41,7 @@ const MyViolations = () => {
         const { data } = await api.post("/api/payments/khalti/initiate", {
           fineId: targetId,
         });
-        window.location.href = data.url;
+        window.location.href = data.payment_url || data.url;
       } else if (method === "esewa") {
         const { data } = await api.post("/api/payments/esewa/initiate", {
           fineId: targetId,
