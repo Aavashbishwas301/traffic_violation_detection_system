@@ -84,9 +84,15 @@ const verifyKhalti = async (req, res) => {
         settlement.paymentDate = Date.now();
         await settlement.save();
 
-        await ViolationLine.findByIdAndUpdate(settlement.violationLineId._id, {
-          status: "Paid",
-        });
+        const violation = await ViolationLine.findById(settlement.violationLineId._id);
+        if (violation && violation.status !== "Paid") {
+          violation.statusHistory.push({
+            status: "Paid",
+            remarks: "Payment verified via Khalti"
+          });
+          violation.status = "Paid";
+          await violation.save();
+        }
 
         return res.json({ success: true, message: "Payment Verified" });
       }
@@ -190,9 +196,15 @@ const verifyEsewa = async (req, res) => {
         settlement.paymentDate = Date.now();
         await settlement.save();
 
-        await ViolationLine.findByIdAndUpdate(settlement.violationLineId._id, {
-          status: "Paid",
-        });
+        const violation = await ViolationLine.findById(settlement.violationLineId._id);
+        if (violation && violation.status !== "Paid") {
+          violation.statusHistory.push({
+            status: "Paid",
+            remarks: "Payment verified via eSewa"
+          });
+          violation.status = "Paid";
+          await violation.save();
+        }
 
         success = true;
       }
@@ -224,9 +236,16 @@ const payFine = async (req, res) => {
       settlement.paymentDate = Date.now();
       await settlement.save();
 
-      await ViolationLine.findByIdAndUpdate(settlement.violationLineId._id, {
-        status: "Paid",
-      });
+      const violation = await ViolationLine.findById(settlement.violationLineId._id);
+      if (violation && violation.status !== "Paid") {
+        violation.statusHistory.push({
+          status: "Paid",
+          changedBy: req.user?._id,
+          remarks: "Manual Cash Payment"
+        });
+        violation.status = "Paid";
+        await violation.save();
+      }
 
       res.json({ message: "Payment simulated successfully", payment: settlement });
     } else {

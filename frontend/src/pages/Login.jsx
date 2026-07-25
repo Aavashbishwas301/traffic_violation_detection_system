@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../utils/axios.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Shield, Mail, Lock, AlertCircle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
@@ -40,7 +40,7 @@ const Login = () => {
     setError('');
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      const { data } = await axios.post('http://localhost:5000/api/users/login', { email: normalizedEmail, password });
+      const { data } = await api.post('/api/users/login', { email: normalizedEmail, password });
       login({ ...data, name: data.name }); 
       navigate('/dashboard');
     } catch (err) {

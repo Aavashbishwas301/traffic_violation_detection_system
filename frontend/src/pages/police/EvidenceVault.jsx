@@ -68,14 +68,14 @@ const EvidenceVault = () => {
               Centralized visual repository of violation proofs and CCTV snapshots.
             </p>
           </div>
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <div className="relative w-full md:w-[400px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <Input
               type="text"
               placeholder="Search plate or infraction..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-full"
+              className="pl-12 w-full py-6 rounded-2xl bg-white shadow-sm border-slate-200 focus:ring-primary-500/20"
             />
           </div>
         </div>
@@ -84,32 +84,34 @@ const EvidenceVault = () => {
           {photos.map((v) => (
             <div
               key={v._id}
-              className="group bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all cursor-pointer relative"
+              className="group bg-white border border-slate-200/60 rounded-2xl overflow-hidden flex flex-col shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative"
               onClick={() => viewEvidence(v.imageUrl || v.evidenceUrl)}>
               
-              <div className="aspect-square bg-slate-100 flex items-center justify-center overflow-hidden relative">
+              <div className="aspect-[4/3] bg-slate-100 flex items-center justify-center overflow-hidden relative">
                 <img
                   src={resolveImageUrl(v.imageUrl || v.evidenceUrl)}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   alt="Evidence"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Eye className="text-white" size={32} />
+                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-md">
+                    <Eye size={24} />
+                  </div>
                 </div>
               </div>
               
-              <div className="p-3 border-t border-slate-100 flex flex-col space-y-2">
+              <div className="p-4 flex flex-col space-y-3">
                 <div className="flex justify-between items-start gap-2">
-                  <p className="text-sm font-semibold text-slate-900 truncate" title={v.violationType}>
+                  <p className="text-sm font-bold text-slate-900 truncate tracking-tight" title={v.violationType}>
                     {v.violationType}
                   </p>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                  <span className="text-xs font-mono font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-1 rounded-md shadow-sm">
                     {v.vehicleId?.vehicleNumber || "UNKN"}
                   </span>
-                  <span className="text-[10px] font-medium text-slate-500">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     {new Date(v.violationDateTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>

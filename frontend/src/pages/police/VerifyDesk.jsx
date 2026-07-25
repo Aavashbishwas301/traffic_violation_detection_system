@@ -107,9 +107,13 @@ const VerifyDesk = () => {
               sortable: true,
               cell: (v) => (
                 <div className="flex items-center space-x-3 w-32">
-                  <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50">
+                  <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50 shadow-inner">
                     <div
-                      className={`h-full ${(v.aiConfidence || 0.8) > 0.85 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                      className={`h-full ${
+                        (v.aiConfidence || 0.8) > 0.85 
+                          ? 'bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' 
+                          : 'bg-gradient-to-r from-amber-400 to-amber-500'
+                      }`}
                       style={{
                         width: `${(v.aiConfidence || 0.8) * 100}%`,
                       }}></div>
@@ -148,24 +152,24 @@ const VerifyDesk = () => {
                   {v.status === "Pending" && (
                     <>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         disabled={actionLoading === v._id}
                         onClick={() => updateStatus(v._id, "Verified", "Verified by Officer")}
-                        className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 bg-white"
+                        className="text-emerald-600 hover:bg-emerald-50 transition-colors"
                         title="Approve"
                       >
-                        {actionLoading === v._id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                        {actionLoading === v._id ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         disabled={actionLoading === v._id}
                         onClick={() => updateStatus(v._id, "Rejected", "Manual Rejection")}
-                        className="text-rose-600 border-rose-200 hover:bg-rose-50 bg-white"
+                        className="text-rose-600 hover:bg-rose-50 transition-colors"
                         title="Reject"
                       >
-                        {actionLoading === v._id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
+                        {actionLoading === v._id ? <Loader2 size={18} className="animate-spin" /> : <XCircle size={18} />}
                       </Button>
                     </>
                   )}

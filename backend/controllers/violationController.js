@@ -88,7 +88,12 @@ const manualViolation = async (req, res) => {
       remarks,
       aiDetected: false,
       appliedFineAmount: fineAmount,
-      violationDateTime: Date.now()
+      violationDateTime: Date.now(),
+      statusHistory: [{
+        status: "Verified",
+        changedBy: req.user._id,
+        remarks: "Manually created and verified"
+      }]
     });
 
     const fileUri = req.file.location || req.file.path;
@@ -209,6 +214,14 @@ const updateViolation = async (req, res) => {
   try {
     const violation = await ViolationLine.findById(req.params.id).populate('violationTypeId');
     if (violation) {
+      if (req.body.status && req.body.status !== violation.status) {
+        violation.statusHistory.push({
+          status: req.body.status,
+          changedBy: req.user._id,
+          remarks: req.body.remarks || "Status updated manually"
+        });
+      }
+
       violation.status = req.body.status || violation.status;
       violation.remarks = req.body.remarks || violation.remarks;
 

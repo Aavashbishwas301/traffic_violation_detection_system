@@ -48,16 +48,16 @@ const AIScan = () => {
     <Layout title="AI Detection Console">
       <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-20">
         
-        <Card className="border-t-4 border-t-primary-600 shadow-lg overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50 rounded-bl-full -z-10 opacity-50"></div>
-          <CardHeader className="pb-8">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center">
-                <Cpu size={24} />
+        <Card className="card-enterprise border-t-0 border-l-[6px] border-l-primary-600 shadow-xl overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary-100/40 rounded-full blur-[80px] -z-10 translate-x-1/3 -translate-y-1/3"></div>
+          <CardHeader className="pb-8 pt-10 px-10">
+            <div className="flex items-center space-x-5">
+              <div className="w-16 h-16 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-primary-600 rounded-2xl flex items-center justify-center border border-slate-100">
+                <Cpu size={32} />
               </div>
               <div>
-                <CardTitle className="text-3xl text-slate-900">AI Scanner Node</CardTitle>
-                <CardDescription className="text-base mt-1">Upload CCTV footage or images for automated violation detection via the Vision Model.</CardDescription>
+                <CardTitle className="text-3xl font-extrabold tracking-tight text-slate-900">AI Scanner Node</CardTitle>
+                <CardDescription className="text-base mt-2 text-slate-500/90 leading-relaxed max-w-lg">Upload CCTV footage or field images. The Vision Model will automatically detect traffic violations and index license plates.</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -72,20 +72,25 @@ const AIScan = () => {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   accept="image/jpeg,image/png,video/mp4"
                 />
-                <div className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${detectFile ? 'border-primary-500 bg-primary-50/50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-primary-300'}`}>
-                  <div className="space-y-4">
-                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-transform duration-500 ${detectFile ? 'bg-primary-100 text-primary-600 scale-110' : 'bg-white text-slate-400 shadow-sm'}`}>
+                <div className={`relative overflow-hidden border-2 border-dashed rounded-3xl p-16 text-center transition-all duration-500 ${detectFile ? 'border-primary-500 bg-primary-50/30 shadow-[inset_0_0_50px_rgba(59,130,246,0.05)]' : 'border-slate-300/60 bg-slate-50/50 hover:bg-slate-50 hover:border-primary-400 hover:shadow-lg'}`}>
+                  
+                  {uploading && (
+                    <div className="absolute inset-0 border-4 border-primary-500 rounded-3xl animate-pulse pointer-events-none"></div>
+                  )}
+
+                  <div className="space-y-6 relative z-10">
+                    <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto transition-all duration-700 ${detectFile ? 'bg-primary-600 text-white shadow-[0_0_30px_rgba(37,99,235,0.4)] scale-110' : 'bg-white text-slate-400 shadow-sm border border-slate-100 group-hover:text-primary-500 group-hover:scale-105'}`}>
                       {detectFile ? (
-                        detectFile.type.includes('video') ? <Video size={32} /> : <ImageIcon size={32} />
+                        detectFile.type.includes('video') ? <Video size={36} /> : <ImageIcon size={36} />
                       ) : (
-                        <Upload size={32} className="group-hover:-translate-y-1 transition-transform" />
+                        <Upload size={36} className="group-hover:-translate-y-1 transition-transform duration-300" />
                       )}
                     </div>
                     <div>
-                      <p className={`text-lg font-bold ${detectFile ? 'text-primary-700' : 'text-slate-700'}`}>
+                      <p className={`text-xl font-bold tracking-tight ${detectFile ? 'text-primary-900' : 'text-slate-700'}`}>
                         {detectFile ? detectFile.name : "Click or drag to upload footage"}
                       </p>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mt-2">
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mt-3">
                         JPG, PNG, MP4 • MAX 100MB
                       </p>
                     </div>
@@ -111,12 +116,12 @@ const AIScan = () => {
               <Button
                 type="submit"
                 disabled={uploading || !detectFile}
-                className="w-full py-6 text-base shadow-lg"
+                className="w-full py-7 text-lg font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all"
               >
                 {uploading ? (
-                  <><Loader2 className="animate-spin mr-3" size={20} /> Processing via AI Engine...</>
+                  <><Loader2 className="animate-spin mr-3" size={24} /> Analyzing via AI Engine...</>
                 ) : (
-                  <><Zap className="mr-2" size={20} /> Initiate Detection Scan</>
+                  <><Zap className="mr-3" size={24} /> Initiate Detection Scan</>
                 )}
               </Button>
             </form>

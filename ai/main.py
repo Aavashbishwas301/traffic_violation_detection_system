@@ -15,7 +15,7 @@ security = HTTPBearer(auto_error=False)
 
 # Global Model Cache
 model = YOLO('yolov8n.pt') 
-reader = easyocr.Reader(['en'], gpu=False) # Set gpu=True if you have a CUDA GPU
+reader = easyocr.Reader(['en', 'ne'], gpu=False) # Set gpu=True if you have a CUDA GPU
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 # Global Constants
@@ -48,19 +48,20 @@ def extract_plate_number(img, bbox):
     if vehicle_crop.size == 0:
         return None
 
-    # Run OCR with allowlist for better accuracy on plates
-    results = reader.readtext(vehicle_crop, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ')
+    # Run OCR without strict English allowlist to allow Nepali characters
+    results = reader.readtext(vehicle_crop)
     
     best_plate = None
     max_conf = 0
     
     for (bbox_ocr, text, prob) in results:
         clean_text = text.upper().strip()
-        # Remove all special characters for length/content checks
-        alphanumeric_text = re.sub(r'[^A-Z0-9]', '', clean_text)
+        # Allow A-Z, 0-9, and Devanagari Unicode Block (\u0900-\u097F)
+        alphanumeric_text = re.sub(r'[^A-Z0-9\u0900-\u097F]', '', clean_text)
         
-        has_letters = bool(re.search(r'[A-Z]', alphanumeric_text))
-        has_numbers = bool(re.search(r'[0-9]', alphanumeric_text))
+        # Devanagari Digits are \u0966-\u096F
+        has_letters = bool(re.search(r'[A-Z\u0900-\u0965\u0970-\u097F]', alphanumeric_text))
+        has_numbers = bool(re.search(r'[0-9\u0966-\u096F]', alphanumeric_text))
         
         if 4 <= len(alphanumeric_text) <= 15 and prob > max_conf:
             # Prefer combinations of letters and numbers for license plates

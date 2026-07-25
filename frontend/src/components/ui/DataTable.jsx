@@ -130,7 +130,7 @@ export const DataTable = ({
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+      <div className="rounded-2xl border-0 bg-white overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-slate-200/60">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>

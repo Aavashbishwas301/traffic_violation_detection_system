@@ -105,14 +105,23 @@ if (redisConnection) {
           vehicleId: vehicle._id,
           policeId: uploaderId,
           location: location || "Detected Location",
-          latitude,
-          longitude,
+          ...(latitude && longitude ? {
+            locationPoint: {
+              type: "Point",
+              coordinates: [parseFloat(longitude), parseFloat(latitude)]
+            }
+          } : {}),
           aiDetected: true,
           aiConfidence: dv.confidence,
           status: "Unverified",
           remarks: remarks || "AI Detected Violation",
           appliedFineAmount: fineAmount,
-          violationDateTime: Date.now()
+          violationDateTime: Date.now(),
+          statusHistory: [{
+            status: "Unverified",
+            changedBy: uploaderId,
+            remarks: "System initialized by AI queue"
+          }]
         });
 
         await Evidence.create({

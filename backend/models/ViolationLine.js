@@ -16,8 +16,15 @@ const violationLineSchema = new mongoose.Schema(
       ref: "TrafficPolice",
     },
     location: { type: String, required: true },
-    latitude: { type: Number },
-    longitude: { type: Number },
+    locationPoint: {
+      type: {
+        type: String,
+        enum: ["Point"],
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+      },
+    },
     aiDetected: { type: Boolean, default: false },
     aiConfidence: { type: Number },
     appliedFineAmount: { type: Number, required: true },
@@ -27,11 +34,21 @@ const violationLineSchema = new mongoose.Schema(
       default: "Unverified",
     },
     remarks: { type: String },
+    statusHistory: [
+      {
+        status: { type: String, required: true },
+        changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "TrafficPolice" },
+        date: { type: Date, default: Date.now },
+        remarks: { type: String },
+      }
+    ],
     violationDateTime: { type: Date, required: true },
     verifiedAt: { type: Date },
   },
   { timestamps: true }
 );
+
+violationLineSchema.index({ locationPoint: "2dsphere" });
 
 const ViolationLine = mongoose.model("ViolationLine", violationLineSchema);
 export default ViolationLine;
