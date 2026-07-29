@@ -80,6 +80,7 @@ describe('Violations API', () => {
     mockRule = await Rule.create({
       ruleName: "Speed Limit Rule",
       description: "Do not exceed speed limit",
+      violationType: "Speeding",
       fineAmount: 500
     });
 
@@ -118,10 +119,11 @@ describe('Violations API', () => {
         .set('Authorization', `Bearer ${policeToken}`);
       
       expect(res.statusCode).toEqual(200);
-      expect(Array.isArray(res.body)).toBeTruthy();
-      expect(res.body.length).toBe(1);
+      expect(res.body).toHaveProperty('violations');
+      expect(Array.isArray(res.body.violations)).toBeTruthy();
+      expect(res.body.violations.length).toBe(1);
       
-      const v = res.body[0];
+      const v = res.body.violations[0];
       // Assert population happened correctly
       expect(v.location).toBe("Test Highway");
       expect(v.vehicleId.vehicleNumber).toBe("BA 1 PA 1234");
