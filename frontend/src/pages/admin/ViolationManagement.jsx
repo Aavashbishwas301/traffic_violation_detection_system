@@ -3,16 +3,18 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
-import { Edit3, CheckCircle2, Trash2, Camera } from "lucide-react";
+import { Edit3, CheckCircle2, Trash2, Camera, Database } from "lucide-react";
 import { DataTable } from "../../components/ui/DataTable.jsx";
 import { Badge } from "../../components/ui/Badge.jsx";
 import { Button } from "../../components/ui/Button.jsx";
+import DeepDiveModal from "../../components/DeepDiveModal.jsx";
 
 const ViolationManagement = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const [allViolations, setAllViolations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedViolation, setSelectedViolation] = useState(null);
 
   const fetchViolations = async () => {
     try {
@@ -134,15 +136,23 @@ const ViolationManagement = () => {
                   </Button>
                   {v.status === "Pending" && (
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleVerify(v._id)}
-                      title="Verify"
+                      className="text-blue-600 hover:text-blue-700"
                     >
                       <CheckCircle2 size={16} />
                     </Button>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedViolation(v)}
+                    className="text-primary-600 hover:text-primary-700"
+                    title="Database Deep Dive"
+                  >
+                    <Database size={16} />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -160,6 +170,12 @@ const ViolationManagement = () => {
           searchPlaceholder="Search by Event ID, Plate No. or Violation..."
         />
       </div>
+
+      <DeepDiveModal 
+        isOpen={!!selectedViolation} 
+        onClose={() => setSelectedViolation(null)} 
+        violation={selectedViolation} 
+      />
     </Layout>
   );
 };

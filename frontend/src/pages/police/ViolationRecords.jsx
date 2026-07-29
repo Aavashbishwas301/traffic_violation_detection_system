@@ -3,17 +3,19 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
-import { Download, Filter, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, Filter, FileSpreadsheet, Loader2, Database } from "lucide-react";
 import { Card, CardContent } from "../../components/ui/Card.jsx";
 import { DataTable } from "../../components/ui/DataTable.jsx";
 import { Badge } from "../../components/ui/Badge.jsx";
 import { Button } from "../../components/ui/Button.jsx";
+import DeepDiveModal from "../../components/DeepDiveModal.jsx";
 
 const ViolationRecords = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const [violations, setViolations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedViolation, setSelectedViolation] = useState(null);
 
   useEffect(() => {
     const fetchViolations = async () => {
@@ -171,12 +173,35 @@ const ViolationRecords = () => {
                   {v.status}
                 </Badge>
               )
+            },
+            {
+              header: "Actions",
+              id: "actions",
+              cell: (v) => (
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedViolation(v)}
+                    className="text-primary-600 hover:text-primary-700"
+                    title="Database Deep Dive"
+                  >
+                    <Database size={16} />
+                  </Button>
+                </div>
+              )
             }
           ]}
           searchKey={["vehicleId.vehicleNumber", "violationType"]}
           searchPlaceholder="Search by plate or offense..."
         />
       </div>
+
+      <DeepDiveModal 
+        isOpen={!!selectedViolation} 
+        onClose={() => setSelectedViolation(null)} 
+        violation={selectedViolation} 
+      />
     </Layout>
   );
 };
