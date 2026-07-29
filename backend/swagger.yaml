@@ -1,0 +1,98 @@
+openapi: 3.0.0
+info:
+  title: Traffic Violation Detection System (TVDS) API
+  description: API documentation for the TVDS backend, handling users, vehicles, and violations.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/users/login:
+    post:
+      summary: Login user
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Successful login
+        "401":
+          description: Invalid email or password
+
+  /api/users:
+    post:
+      summary: Register a new user
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [Admin, TrafficPolice, VehicleOwner]
+                citizenshipNumber:
+                  type: string
+                  description: Required for VehicleOwner
+                badgeNumber:
+                  type: string
+                  description: Required for TrafficPolice
+      responses:
+        "201":
+          description: User registered successfully
+
+  /api/violations:
+    get:
+      summary: Get all violations
+      tags: [Violations]
+      description: Returns all violations. Requires Admin or TrafficPolice role.
+      responses:
+        "200":
+          description: List of violations
+
+  /api/violations/my:
+    get:
+      summary: Get my violations
+      tags: [Violations]
+      description: Returns violations linked to the logged-in VehicleOwner.
+      responses:
+        "200":
+          description: List of owner-specific violations
+
+  /api/vehicles:
+    get:
+      summary: Get all registered vehicles
+      tags: [Vehicles]
+      responses:
+        "200":
+          description: List of vehicles

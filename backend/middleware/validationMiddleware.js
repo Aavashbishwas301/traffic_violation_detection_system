@@ -28,6 +28,21 @@ const registerValidation = [
   body("password")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters"),
+  body("role")
+    .isIn(["Admin", "TrafficPolice", "VehicleOwner"])
+    .withMessage("Invalid role specified"),
+  body("citizenshipNumber").custom((value, { req }) => {
+    if (req.body.role === "VehicleOwner" && (!value || value.trim() === "")) {
+      throw new Error("Citizenship number is required for vehicle owners");
+    }
+    return true;
+  }),
+  body("badgeNumber").custom((value, { req }) => {
+    if (req.body.role === "TrafficPolice" && (!value || value.trim() === "")) {
+      throw new Error("Badge number is required for traffic police");
+    }
+    return true;
+  }),
   handleValidationErrors,
 ];
 
@@ -52,7 +67,16 @@ const vehicleRegistrationValidation = [
   body("vehicleNumber")
     .trim()
     .notEmpty()
-    .withMessage("Vehicle number is required"),
+    .withMessage("Vehicle number is required")
+    .matches(/^[A-Z0-9 -]+$/i)
+    .withMessage("Invalid vehicle number format"),
+  body("vehicleType")
+    .optional()
+    .isIn(["Car", "Van", "Bus", "Truck", "Bike", "Scooter", "2-Wheeler", "4-Wheeler", "Other", "Heavy"])
+    .withMessage("Invalid vehicle type"),
+  body("color").optional().trim().escape(),
+  body("brand").optional().trim().escape(),
+  body("model").optional().trim().escape(),
   handleValidationErrors,
 ];
 
