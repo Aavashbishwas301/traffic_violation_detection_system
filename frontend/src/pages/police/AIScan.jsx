@@ -8,13 +8,38 @@ import { Input } from "../../components/ui/Input.jsx";
 import { Label } from "../../components/ui/Label.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 
+import { useSocket } from "../../context/SocketContext.jsx";
+
 const AIScan = () => {
   const { addToast } = useToast();
+  const { socket } = useSocket();
   const [detectFile, setDetectFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [detectMeta, setDetectMeta] = useState({
     location: "Koteshwor Intersection",
   });
+
+  React.useEffect(() => {
+    if (!socket) return;
+
+    const handleProcessed = (data) => {
+      if (data.status === "completed") {
+        addToast(
+          `Detection Complete! Found ${data.resultsCount} violations for vehicle ${data.vehicleNumber}.`,
+          "success"
+        );
+      } else {
+        addToast(`AI Detection Failed: ${data.error}`, "error");
+      }
+      setUploading(false);
+    };
+
+    socket.on("violation_processed", handleProcessed);
+
+    return () => {
+      socket.off("violation_processed", handleProcessed);
+    };
+  }, [socket, addToast]);
 
   const handleAIDetect = async (e) => {
     e.preventDefault();
@@ -29,7 +54,7 @@ const AIScan = () => {
     addToast("Uploading to AI Engine...", "info");
 
     try {
-      const { data } = await api.post("/api/violations/detect", formData, {
+      const { data } = await api.post("/api/violations/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       addToast(data.message || "Detection task queued.", "success");
@@ -69,7 +94,7 @@ const AIScan = () => {
                 <input
                   type="file"
                   onChange={(e) => setDetectFile(e.target.files[0])}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
                   accept="image/jpeg,image/png,video/mp4"
                 />
                 <div className={`relative overflow-hidden border-2 border-dashed rounded-3xl p-16 text-center transition-all duration-500 ${detectFile ? 'border-primary-500 bg-primary-50/30 shadow-[inset_0_0_50px_rgba(59,130,246,0.05)]' : 'border-slate-300/60 bg-slate-50/50 hover:bg-slate-50 hover:border-primary-400 hover:shadow-lg'}`}>
@@ -115,7 +140,7 @@ const AIScan = () => {
 
               <Button
                 type="submit"
-                disabled={uploading || !detectFile}
+                disabled={uploading}
                 className="w-full py-7 text-lg font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all"
               >
                 {uploading ? (

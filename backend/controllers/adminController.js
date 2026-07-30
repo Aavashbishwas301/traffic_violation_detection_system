@@ -195,6 +195,26 @@ const updateRule = async (req, res) => {
   }
 };
 
+// @desc    Delete financial rule
+// @route   DELETE /api/admin/rules/:id
+// @access  Private (Admin)
+const deleteRule = async (req, res) => {
+  try {
+    const rule = await Rule.findById(req.params.id);
+    if (!rule) {
+      return res.status(404).json({ message: "Rule not found" });
+    }
+    
+    // Optional: We can also delete the corresponding ViolationType
+    // await ViolationType.deleteOne({ trafficRuleId: rule._id });
+
+    await Rule.findByIdAndDelete(req.params.id);
+    res.json({ message: "Rule deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 const getVehicles = async (req, res) => {
   const vehicles = await Vehicle.find({}).populate("ownerId", "fullName email phoneNumber");
   res.json(vehicles);
@@ -489,6 +509,7 @@ export {
   deleteVehicle,
   getRules,
   updateRule,
+  deleteRule,
   generateGlobalReport,
   broadcastMessage,
   getNotifications,

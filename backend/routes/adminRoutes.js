@@ -9,6 +9,7 @@ import {
   deleteVehicle,
   getRules,
   updateRule,
+  deleteRule,
   generateGlobalReport,
   broadcastMessage,
   getNotifications,
@@ -48,6 +49,7 @@ router
 // Rules and Reports
 router.get("/rules", protect, police, getRules);
 router.post("/rules", protect, admin, ruleValidation, updateRule);
+router.delete("/rules/:id", protect, admin, deleteRule);
 router.get("/report", protect, admin, generateGlobalReport);
 router.post(
   "/broadcast",

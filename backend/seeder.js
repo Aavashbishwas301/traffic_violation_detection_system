@@ -40,7 +40,7 @@ const seedData = async () => {
     // 1. Create Admin
     const admin = await Admin.create({
       fullName: 'System Administrator',
-      email: 'admin@example.com',
+      email: 'bishwasaavash@gmail.com',
       password: 'password123',
       phoneNumber: '9851000000',
     });
@@ -104,27 +104,39 @@ const seedData = async () => {
       status: 'Active'
     });
 
-    // 6. Create Traffic Rules
-    const rule1 = await Rule.create({
-        violationType: 'No Helmet',
-        description: 'Riding a motorcycle without a protective helmet.',
-        fineAmount: 1000
-    });
-
-    const rule2 = await Rule.create({
-        violationType: 'Traffic Light',
-        description: 'Jumping a red traffic light signal.',
-        fineAmount: 500
-    });
+    // 6. Create Traffic Rules (According to Nepal Traffic Police Guidelines)
+    const rule1 = await Rule.create({ violationType: 'No Helmet', description: 'Riding a two-wheeler without a protective helmet.', fineAmount: 500 });
+    const rule2 = await Rule.create({ violationType: 'Traffic Light', description: 'Disobeying traffic signals (Red light jump).', fineAmount: 500 });
+    const rule3 = await Rule.create({ violationType: 'Zebra Crossing', description: 'Stopping on or encroaching a zebra crossing.', fineAmount: 500 });
+    const rule4 = await Rule.create({ violationType: 'Sidewalk Encroachment', description: 'Driving or parking on a pedestrian pavement/sidewalk.', fineAmount: 1000 });
+    const rule5 = await Rule.create({ violationType: 'Wrong Way', description: 'Driving in the opposite direction of traffic flow (One-way violation).', fineAmount: 1000 });
+    const rule6 = await Rule.create({ violationType: 'Triple Riding', description: 'Carrying more than one pillion passenger on a two-wheeler.', fineAmount: 500 });
+    const rule7 = await Rule.create({ violationType: 'Drink Driving (MaPaSe)', description: 'Driving under the influence of alcohol.', fineAmount: 1000 });
+    const rule8 = await Rule.create({ violationType: 'Over Speeding', description: 'Exceeding the designated speed limit.', fineAmount: 1000 });
+    const rule9 = await Rule.create({ violationType: 'Mobile Phone Use', description: 'Using a mobile phone while driving.', fineAmount: 500 });
+    const rule10 = await Rule.create({ violationType: 'No License/Bluebook', description: 'Driving without a valid license or vehicle registration (Bluebook).', fineAmount: 1000 });
+    const rule11 = await Rule.create({ violationType: 'No Seatbelt', description: 'Driving a four-wheeler without wearing a seatbelt.', fineAmount: 500 });
+    const rule12 = await Rule.create({ violationType: 'No Parking Zone', description: 'Parking a vehicle in a designated No Parking zone.', fineAmount: 1000 });
+    const rule13 = await Rule.create({ violationType: 'Horn Violation', description: 'Sounding horn in a strictly No-Horn zone (e.g., Kathmandu Valley).', fineAmount: 500 });
+    const rule14 = await Rule.create({ violationType: 'Vehicle Modification', description: 'Illegal modification of vehicle (e.g., loud exhaust, altered chassis).', fineAmount: 1500 });
 
     // 7. Create Violation Types
-    const vTypeHelmet = await ViolationType.create({
-        trafficRuleId: rule1._id,
-        violationName: 'No Helmet',
-        description: 'Riding without helmet on 2-wheeler',
-        severityLevel: 'High',
-        isAIEnabled: true
-    });
+    const vTypeHelmet = await ViolationType.create({ trafficRuleId: rule1._id, violationName: 'No Helmet', description: 'Riding without helmet on 2-wheeler', severityLevel: 'High', isAIEnabled: true });
+    await ViolationType.create({ trafficRuleId: rule2._id, violationName: 'Traffic Light', description: 'Red light jump', severityLevel: 'High', isAIEnabled: true });
+    await ViolationType.create({ trafficRuleId: rule3._id, violationName: 'Zebra Crossing', description: 'Zebra crossing violation', severityLevel: 'Medium', isAIEnabled: true });
+    await ViolationType.create({ trafficRuleId: rule4._id, violationName: 'Sidewalk Encroachment', description: 'Sidewalk encroachment', severityLevel: 'High', isAIEnabled: true });
+    await ViolationType.create({ trafficRuleId: rule5._id, violationName: 'Wrong Way', description: 'Wrong way driving', severityLevel: 'High', isAIEnabled: true });
+    await ViolationType.create({ trafficRuleId: rule6._id, violationName: 'Triple Riding', description: 'Triple riding on motorcycle', severityLevel: 'High', isAIEnabled: true });
+    
+    // Non-AI (Manual entry mostly)
+    await ViolationType.create({ trafficRuleId: rule7._id, violationName: 'Drink Driving (MaPaSe)', description: 'Driving under influence', severityLevel: 'Critical', isAIEnabled: false });
+    await ViolationType.create({ trafficRuleId: rule8._id, violationName: 'Over Speeding', description: 'Speed limit crossed', severityLevel: 'High', isAIEnabled: false });
+    await ViolationType.create({ trafficRuleId: rule9._id, violationName: 'Mobile Phone Use', description: 'Using phone while driving', severityLevel: 'Medium', isAIEnabled: false });
+    await ViolationType.create({ trafficRuleId: rule10._id, violationName: 'No License/Bluebook', description: 'Missing documents', severityLevel: 'High', isAIEnabled: false });
+    await ViolationType.create({ trafficRuleId: rule11._id, violationName: 'No Seatbelt', description: 'Seatbelt not worn', severityLevel: 'Medium', isAIEnabled: false });
+    await ViolationType.create({ trafficRuleId: rule12._id, violationName: 'No Parking Zone', description: 'Illegal parking', severityLevel: 'Low', isAIEnabled: false });
+    await ViolationType.create({ trafficRuleId: rule13._id, violationName: 'Horn Violation', description: 'Honking in restricted area', severityLevel: 'Low', isAIEnabled: false });
+    await ViolationType.create({ trafficRuleId: rule14._id, violationName: 'Vehicle Modification', description: 'Loud exhaust or illegal parts', severityLevel: 'High', isAIEnabled: false });
 
     // 8. Create Vehicles
     const vehicle1 = await Vehicle.create({

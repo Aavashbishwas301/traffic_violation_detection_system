@@ -16,7 +16,12 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 import validateEnv from "./config/envValidator.js";
 import { createServer } from "http";
 import { initializeSocket } from "./socket.js";
+import swaggerUi from "swagger-ui-express";
+import yaml from "yamljs";
 import "./jobs/violationQueue.js"; // Initialize background worker
+
+// Load Swagger document
+const swaggerDocument = yaml.load("./swagger.yaml");
 
 dotenv.config();
 
@@ -48,6 +53,9 @@ app.use("/api/violations", violationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/payments", paymentRoutes);
+
+// Swagger Documentation Route
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));

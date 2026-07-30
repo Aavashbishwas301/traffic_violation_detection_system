@@ -34,8 +34,8 @@ describe("Auth Validation Rules", () => {
   });
 
   describe("registerValidation", () => {
-    it("should have 4 middleware functions (name + email + password + error handler)", () => {
-      expect(registerValidation.length).toBe(4);
+    it("should have 7 middleware functions (name + email + password + role + citizenship + badge + error handler)", () => {
+      expect(registerValidation.length).toBe(7);
     });
   });
 });

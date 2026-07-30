@@ -97,7 +97,24 @@ if (redisConnection) {
 
       // 4. Process each detected violation
       for (const dv of detectedViolations) {
-        const vType = await ViolationType.findOne({ violationName: dv.type }).populate("trafficRuleId");
+        let vType = await ViolationType.findOne({ violationName: dv.type }).populate("trafficRuleId");
+        
+        if (!vType) {
+          console.log(`ViolationType '${dv.type}' not found in DB. Auto-creating fallback...`);
+          const fallbackRule = await Rule.create({
+            violationType: dv.type,
+            description: `Auto-generated rule for AI detection: ${dv.type}`,
+            fineAmount: 500
+          });
+          vType = await ViolationType.create({
+            trafficRuleId: fallbackRule._id,
+            violationName: dv.type,
+            description: `Auto-generated type for AI detection: ${dv.type}`,
+            severityLevel: 'Medium',
+            isAIEnabled: true
+          });
+        }
+
         const fineAmount = vType?.trafficRuleId?.fineAmount || 500;
 
         const violation = await ViolationLine.create({
