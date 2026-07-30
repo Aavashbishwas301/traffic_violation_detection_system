@@ -26,5 +26,9 @@ router
   .route("/profile")
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
+  
+router.get("/verify", protect, (req, res) => {
+  res.status(200).json({ valid: true, user: req.user });
+});
 
 export default router;

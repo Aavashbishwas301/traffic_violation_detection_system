@@ -7,14 +7,38 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('tvds_user');
-    if (storedUser) {
-      const parsed = JSON.parse(storedUser);
-      // Normalize 'fullName' to 'name' for backward compatibility
-      if (parsed.fullName && !parsed.name) parsed.name = parsed.fullName;
-      setUser(parsed);
-    }
-    setLoading(false);
+    const verifyToken = async () => {
+      const storedUser = localStorage.getItem('tvds_user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          
+          // Send request to verify token validity
+          const response = await fetch('http://localhost:5000/api/users/verify', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${parsed.token}`
+            }
+          });
+
+          if (response.ok) {
+            if (parsed.fullName && !parsed.name) parsed.name = parsed.fullName;
+            setUser(parsed);
+          } else {
+            // Token invalid or expired
+            localStorage.removeItem('tvds_user');
+            setUser(null);
+          }
+        } catch (error) {
+          localStorage.removeItem('tvds_user');
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+
+    verifyToken();
   }, []);
 
   const login = (userData) => {

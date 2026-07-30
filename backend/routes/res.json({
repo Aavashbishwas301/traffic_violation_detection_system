@@ -1,0 +1,1 @@
+router.get('/verify', protect, (req, res) = valid: true }));
