@@ -42,6 +42,8 @@ const Layout = ({ children, title }) => {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Admin'] },
     { name: 'Manage Police', icon: ShieldCheck, path: '/officers', roles: ['Admin'] },
     { name: 'Vehicle Registry', icon: Car, path: '/vehicle-mgmt', roles: ['Admin'] },
+    { name: 'AI Scan', icon: Camera, path: '/detect', roles: ['TrafficPolice', 'Admin'] },
+    { name: 'Manual Entry', icon: Edit3, path: '/manual-entry', roles: ['TrafficPolice', 'Admin'] },
     { name: 'Violation Management', icon: FileText, path: '/violation-mgmt', roles: ['Admin'] },
     { name: 'Fine Management', icon: CreditCard, path: '/fines-mgmt', roles: ['Admin'] },
     { name: 'Traffic Rules', icon: Settings, path: '/financial-rules', roles: ['Admin'] },
@@ -52,8 +54,6 @@ const Layout = ({ children, title }) => {
 
     // --- TRAFFIC POLICE ---
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['TrafficPolice'] },
-    { name: 'AI Scan', icon: Camera, path: '/detect', roles: ['TrafficPolice'] },
-    { name: 'Manual Entry', icon: Edit3, path: '/manual-entry', roles: ['TrafficPolice'] },
     { name: 'Verify Desk', icon: FileText, path: '/manage', roles: ['TrafficPolice'] },
     { name: 'Evidence Photos', icon: Image, path: '/evidence', roles: ['TrafficPolice'] },
     { name: 'Search Vehicle', icon: Search, path: '/search', roles: ['TrafficPolice'] },

@@ -122,8 +122,8 @@ function App() {
 
                   {/* --- Police Specific Routes --- */}
                   <Route path="/police" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><PoliceOverview /></ProtectedRoute>} />
-                  <Route path="/detect" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><AIScan /></ProtectedRoute>} />
-                  <Route path="/manual-entry" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><ManualEntry /></ProtectedRoute>} />
+                  <Route path="/detect" element={<ProtectedRoute allowedRoles={["TrafficPolice", "Admin"]}><AIScan /></ProtectedRoute>} />
+                  <Route path="/manual-entry" element={<ProtectedRoute allowedRoles={["TrafficPolice", "Admin"]}><ManualEntry /></ProtectedRoute>} />
                   <Route path="/manage" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><VerifyDesk /></ProtectedRoute>} />
                   <Route path="/records" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><ViolationRecords /></ProtectedRoute>} />
                   <Route path="/search" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><VehicleSearch /></ProtectedRoute>} />

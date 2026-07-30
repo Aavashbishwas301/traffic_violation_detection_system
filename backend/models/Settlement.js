@@ -13,7 +13,7 @@ const settlementSchema = new mongoose.Schema(
     },
     amountPaid: { type: Number, required: true },
     paymentMethod: { type: String, required: true },
-    transactionId: { type: String, unique: true },
+    transactionId: { type: String, unique: true, sparse: true },
     receiptNumber: { type: String },
     paymentStatus: {
       type: String,
