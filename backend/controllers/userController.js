@@ -48,7 +48,11 @@ const authUser = async (req, res) => {
             phoneNumber: user.phoneNumber,
             designationId: user.designationId,
             joiningDate: user.joiningDate,
-            profilePhoto: user.profilePhoto
+            profilePhoto: user.profilePhoto,
+            status: user.status,
+            lastLogin: user.lastLogin,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
         });
     }
   } else {
@@ -110,7 +114,11 @@ const getUserProfile = async (req, res) => {
       email: req.user.email,
       role: req.user.role,
       phoneNumber: req.user.phoneNumber,
-      profilePhoto: req.user.profilePhoto
+      profilePhoto: req.user.profilePhoto,
+      status: req.user.status,
+      lastLogin: req.user.lastLogin,
+      createdAt: req.user.createdAt,
+      updatedAt: req.user.updatedAt
     };
 
     if (req.user.role === 'TrafficPolice') {
@@ -153,6 +161,11 @@ const updateUserProfile = async (req, res) => {
       email: updatedUser.email,
       role: req.user.role,
       token: generateToken(updatedUser._id, req.user.role),
+      phoneNumber: updatedUser.phoneNumber,
+      status: updatedUser.status,
+      lastLogin: updatedUser.lastLogin,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt
     });
   } else {
     res.status(404).json({ message: 'User not found' });

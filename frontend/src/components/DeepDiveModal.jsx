@@ -1,9 +1,11 @@
 import React from "react";
 import { 
   X, MapPin, Map, Database, Clock, 
-  CreditCard, User, Car, Shield, Fingerprint, Calendar
+  CreditCard, User, Car, Shield, Fingerprint, Calendar, Download
 } from "lucide-react";
 import { Badge } from "./ui/Badge";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const DeepDiveModal = ({ isOpen, onClose, violation }) => {
   if (!isOpen || !violation) return null;
@@ -34,6 +36,78 @@ const DeepDiveModal = ({ isOpen, onClose, violation }) => {
     ? `https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`
     : null;
 
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text("Official Traffic Violation Report", 14, 22);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text(`Record ID: ${violation._id}`, 14, 30);
+    doc.text(`Report Generated: ${new Date().toLocaleString()}`, 14, 36);
+
+    // Vehicle Details
+    doc.autoTable({
+      startY: 45,
+      head: [['Vehicle & Owner Details', '']],
+      body: [
+        ['License Plate', vehicle.vehicleNumber || vehicle.licensePlate || "UNKNOWN"],
+        ['Database ID', vehicle._id || "N/A"],
+        ['Owner Name', owner.fullName || "UNREGISTERED"],
+        ['Owner Contact', owner.phoneNumber || "NO PHONE"],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59] } // slate-800
+    });
+
+    // Violation Details
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [['Incident Details', '']],
+      body: [
+        ['Violation Type', violation.violationType || "N/A"],
+        ['Incident Date/Time', new Date(createdAt).toLocaleString()],
+        ['Location', location || "N/A"],
+        ['GPS Coordinates', coordinates ? `${coordinates.lat}, ${coordinates.lng}` : "GEO_DATA_MISSING"],
+        ['Current Record Status', violation.status || "N/A"],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59] }
+    });
+
+    // Fine Details
+    if (fine) {
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 10,
+        head: [['Settlement Details', '']],
+        body: [
+          ['Fine Amount', `NPR ${fine.amountPaid || violation.appliedFineAmount || 0}`],
+          ['Payment Method', fine.paymentMethod || "NONE"],
+          ['Transaction ID', fine.transactionId || "N/A"],
+          ['Payment Status', fine.paymentStatus || "Pending"],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [30, 41, 59] }
+      });
+    } else {
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 10,
+        head: [['Settlement Details', '']],
+        body: [
+          ['Fine Amount', `NPR ${violation.appliedFineAmount || 0}`],
+          ['Status', 'No settlement record attached yet.'],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [30, 41, 59] }
+      });
+    }
+
+    doc.save(`Violation_Report_${violation._id.slice(-6).toUpperCase()}.pdf`);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-950/40 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-100">
@@ -52,12 +126,20 @@ const DeepDiveModal = ({ isOpen, onClose, violation }) => {
               <p className="text-sm text-slate-500 font-medium">Complete relational & audit extraction</p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={handleDownloadPDF}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-black text-white text-sm font-bold rounded-xl transition-colors"
+            >
+              <Download className="w-4 h-4" /> Download PDF Report
+            </button>
+            <button 
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* Content (Scrollable) */}
