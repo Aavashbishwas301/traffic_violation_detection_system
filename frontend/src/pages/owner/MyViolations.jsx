@@ -147,7 +147,7 @@ const MyViolations = () => {
                   {v.status !== "Paid" && (
                     <div className="pt-2">
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Settle Fine</p>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           variant="outline"
                           onClick={() => handlePay(v._id, "esewa", v.fine?._id)}
@@ -155,14 +155,6 @@ const MyViolations = () => {
                           className="bg-[#60bb46]/10 text-[#60bb46] border-[#60bb46]/30 hover:bg-[#60bb46]/20 h-9"
                         >
                           {payLoading[`${v._id}-esewa`] ? <Loader2 size={14} className="animate-spin" /> : "eSewa"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handlePay(v._id, "khalti", v.fine?._id)}
-                          disabled={payLoading[`${v._id}-khalti`]}
-                          className="bg-[#5d2e8e]/10 text-[#5d2e8e] border-[#5d2e8e]/30 hover:bg-[#5d2e8e]/20 h-9"
-                        >
-                          {payLoading[`${v._id}-khalti`] ? <Loader2 size={14} className="animate-spin" /> : "Khalti"}
                         </Button>
                         <Button
                           variant="secondary"

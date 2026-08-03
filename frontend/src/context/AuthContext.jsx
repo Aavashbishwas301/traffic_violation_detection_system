@@ -23,8 +23,19 @@ export const AuthProvider = ({ children }) => {
           });
 
           if (response.ok) {
-            if (parsed.fullName && !parsed.name) parsed.name = parsed.fullName;
-            setUser(parsed);
+            const data = await response.json();
+            const freshUser = data.user;
+            
+            // Merge the fresh data from the DB with our token
+            const updatedUser = {
+              ...freshUser,
+              name: freshUser.fullName || freshUser.name,
+              role: freshUser.role || parsed.role,
+              token: parsed.token
+            };
+            
+            setUser(updatedUser);
+            localStorage.setItem('tvds_user', JSON.stringify(updatedUser));
           } else {
             // Token invalid or expired
             localStorage.removeItem('tvds_user');

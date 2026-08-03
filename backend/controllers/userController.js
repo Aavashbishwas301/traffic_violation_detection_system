@@ -36,24 +36,34 @@ const authUser = async (req, res) => {
             await user.save();
         }
 
-        return res.json({
+        const responseData = {
             _id: user._id,
             name: user.fullName,
             email: user.email,
             role: role,
             token: generateToken(user._id, role),
-            badgeNumber: user.badgeNumber,
-            rank: user.rank,
-            station: user.station,
             phoneNumber: user.phoneNumber,
-            designationId: user.designationId,
-            joiningDate: user.joiningDate,
             profilePhoto: user.profilePhoto,
             status: user.status,
             lastLogin: user.lastLogin,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt
-        });
+        };
+
+        if (role === 'TrafficPolice') {
+            responseData.badgeNumber = user.badgeNumber;
+            responseData.rank = user.rank;
+            responseData.station = user.station;
+            responseData.designationId = user.designationId;
+            responseData.joiningDate = user.joiningDate;
+        } else if (role === 'VehicleOwner') {
+            responseData.citizenshipNumber = user.citizenshipNumber;
+            responseData.address = user.address;
+            responseData.gender = user.gender;
+            responseData.dateOfBirth = user.dateOfBirth;
+        }
+
+        return res.json(responseData);
     }
   } else {
       console.log(`User not found: ${normalizedEmail}`);
@@ -127,7 +137,11 @@ const getUserProfile = async (req, res) => {
         profile.station = req.user.station;
         profile.designationId = req.user.designationId;
         profile.joiningDate = req.user.joiningDate;
-        profile.status = req.user.status;
+    } else if (req.user.role === 'VehicleOwner') {
+        profile.citizenshipNumber = req.user.citizenshipNumber;
+        profile.address = req.user.address;
+        profile.gender = req.user.gender;
+        profile.dateOfBirth = req.user.dateOfBirth;
     }
 
     res.json(profile);
@@ -149,13 +163,16 @@ const updateUserProfile = async (req, res) => {
     user.fullName = req.body.fullName || user.fullName;
     user.email = req.body.email || user.email;
     user.phoneNumber = req.body.phoneNumber || user.phoneNumber;
+    if (req.user.role === 'VehicleOwner') {
+      user.address = req.body.address || user.address;
+    }
     if (req.body.password) {
       user.password = req.body.password;
     }
 
     const updatedUser = await user.save();
 
-    res.json({
+    const responseData = {
       _id: updatedUser._id,
       name: updatedUser.fullName,
       email: updatedUser.email,
@@ -166,7 +183,16 @@ const updateUserProfile = async (req, res) => {
       lastLogin: updatedUser.lastLogin,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt
-    });
+    };
+
+    if (req.user.role === 'VehicleOwner') {
+      responseData.citizenshipNumber = updatedUser.citizenshipNumber;
+      responseData.address = updatedUser.address;
+      responseData.gender = updatedUser.gender;
+      responseData.dateOfBirth = updatedUser.dateOfBirth;
+    }
+
+    res.json(responseData);
   } else {
     res.status(404).json({ message: 'User not found' });
   }

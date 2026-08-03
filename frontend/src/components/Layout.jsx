@@ -70,7 +70,8 @@ const Layout = ({ children, title }) => {
     { name: 'Send Complaint', icon: MessageSquare, path: '/complaints', roles: ['VehicleOwner'] },
     
     // --- COMMON ---
-    { name: 'My Profile', icon: Settings, path: '/settings', roles: ['TrafficPolice', 'VehicleOwner'] },
+    { name: 'My Profile', icon: Settings, path: '/settings', roles: ['TrafficPolice'] },
+    { name: 'My Profile', icon: User, path: '/owner-settings', roles: ['VehicleOwner'] },
   ];
 
   const filteredNav = navItems.filter(item => item.roles.includes(user?.role || ''));

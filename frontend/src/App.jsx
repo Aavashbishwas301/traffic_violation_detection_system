@@ -54,6 +54,7 @@ const MyPhotos = lazy(() => import("./pages/owner/MyPhotos.jsx"));
 const PaymentHistory = lazy(() => import("./pages/owner/PaymentHistory.jsx"));
 const MyVehicles = lazy(() => import("./pages/owner/MyVehicles.jsx"));
 const SendComplaint = lazy(() => import("./pages/owner/SendComplaint.jsx"));
+const OwnerSettings = lazy(() => import("./pages/owner/OwnerSettings.jsx"));
 
 const Loader = () => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden relative">
@@ -136,6 +137,7 @@ function App() {
                   <Route path="/payments" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><PaymentHistory /></ProtectedRoute>} />
                   <Route path="/vehicle" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><MyVehicles /></ProtectedRoute>} />
                   <Route path="/complaints" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><SendComplaint /></ProtectedRoute>} />
+                  <Route path="/owner-settings" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><OwnerSettings /></ProtectedRoute>} />
 
                   {/* --- Shared Routes --- */}
                   <Route path="/notifications" element={<ProtectedRoute allowedRoles={["VehicleOwner", "TrafficPolice"]}><Notifications /></ProtectedRoute>} />

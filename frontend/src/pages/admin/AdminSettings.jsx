@@ -77,9 +77,17 @@ const AdminSettings = () => {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
-              <div className="w-20 h-20 bg-primary-900 rounded-[24px] flex items-center justify-center text-white font-black text-4xl italic shadow-2xl">
-                {user?.name?.charAt(0)}
-              </div>
+              {user?.profilePhoto ? (
+                <img 
+                  src={user.profilePhoto} 
+                  alt="Profile" 
+                  className="w-20 h-20 rounded-[24px] object-cover shadow-2xl border-2 border-primary-900" 
+                />
+              ) : (
+                <div className="w-20 h-20 bg-primary-900 rounded-[24px] flex items-center justify-center text-white font-black text-4xl italic shadow-2xl">
+                  {user?.name?.charAt(0)}
+                </div>
+              )}
               <div>
                 <h4 className="text-3xl font-black italic tracking-tighter text-primary-950 leading-none">
                   {user?.name}
@@ -216,6 +224,22 @@ const AdminSettings = () => {
                 </p>
                 <p className="text-sm font-black text-slate-700">
                   {user?.lastLogin ? new Date(user.lastLogin).toLocaleString() : "First Login"}
+                </p>
+              </div>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">
+                  Profile Last Updated
+                </p>
+                <p className="text-sm font-black text-slate-700">
+                  {user?.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : "N/A"}
+                </p>
+              </div>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">
+                  Database ID
+                </p>
+                <p className="text-sm font-black text-slate-500 font-mono text-xs">
+                  {user?._id || "N/A"}
                 </p>
               </div>
             </div>

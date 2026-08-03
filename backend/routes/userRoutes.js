@@ -28,7 +28,13 @@ router
   .put(protect, updateUserProfile);
   
 router.get("/verify", protect, (req, res) => {
-  res.status(200).json({ valid: true, user: req.user });
+  res.status(200).json({ 
+    valid: true, 
+    user: {
+      ...req.user.toObject(),
+      role: req.user.role
+    } 
+  });
 });
 
 export default router;
