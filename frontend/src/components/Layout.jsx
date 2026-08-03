@@ -70,7 +70,7 @@ const Layout = ({ children, title }) => {
     { name: 'Send Complaint', icon: MessageSquare, path: '/complaints', roles: ['VehicleOwner'] },
     
     // --- COMMON ---
-    { name: 'My Profile', icon: Settings, path: '/settings', roles: ['TrafficPolice'] },
+    { name: 'My Profile', icon: Settings, path: '/police-settings', roles: ['TrafficPolice'] },
     { name: 'My Profile', icon: User, path: '/owner-settings', roles: ['VehicleOwner'] },
   ];
 

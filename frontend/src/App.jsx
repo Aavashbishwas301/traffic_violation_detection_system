@@ -55,6 +55,7 @@ const PaymentHistory = lazy(() => import("./pages/owner/PaymentHistory.jsx"));
 const MyVehicles = lazy(() => import("./pages/owner/MyVehicles.jsx"));
 const SendComplaint = lazy(() => import("./pages/owner/SendComplaint.jsx"));
 const OwnerSettings = lazy(() => import("./pages/owner/OwnerSettings.jsx"));
+const PoliceSettings = lazy(() => import("./pages/police/PoliceSettings.jsx"));
 
 const Loader = () => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden relative">
@@ -129,6 +130,7 @@ function App() {
                   <Route path="/records" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><ViolationRecords /></ProtectedRoute>} />
                   <Route path="/search" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><VehicleSearch /></ProtectedRoute>} />
                   <Route path="/evidence" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><EvidenceVault /></ProtectedRoute>} />
+                  <Route path="/police-settings" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><PoliceSettings /></ProtectedRoute>} />
 
                   {/* --- Owner Specific Routes --- */}
                   <Route path="/owner" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><OwnerOverview /></ProtectedRoute>} />

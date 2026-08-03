@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axios.js';
-import { KeyRound, Lock, Loader2, Shield, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { KeyRound, Lock, Loader2, Shield, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Input } from '../../components/ui/Input.jsx';
 import { Label } from '../../components/ui/Label.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -10,6 +10,9 @@ const ResetPassword = () => {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -112,13 +115,20 @@ const ResetPassword = () => {
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <Input
                 id="newPassword"
-                type="password"
-                className="pl-10"
+                type={showNewPassword ? "text" : "password"}
+                className="pl-10 pr-10"
                 placeholder="••••••••"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -128,13 +138,20 @@ const ResetPassword = () => {
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <Input
                 id="confirmPassword"
-                type="password"
-                className="pl-10"
+                type={showConfirmPassword ? "text" : "password"}
+                className="pl-10 pr-10"
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
