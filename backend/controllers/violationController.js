@@ -212,13 +212,46 @@ const getMyViolations = async (req, res) => {
 // @access  Private (Police/Admin)
 const updateViolation = async (req, res) => {
   try {
-    const violation = await ViolationLine.findById(req.params.id).populate('violationTypeId');
+    const violation = await ViolationLine.findById(req.params.id)
+      .populate('violationTypeId')
+      .populate('vehicleId');
+
     if (violation) {
-      if (req.body.status && req.body.status !== violation.status) {
+      let auditRemarks = req.body.remarks || "Status updated manually";
+
+      // Check if vehicle plate number is being corrected
+      if (req.body.vehicleNumber && (!violation.vehicleId || req.body.vehicleNumber !== violation.vehicleId.vehicleNumber)) {
+        const oldPlate = violation.vehicleId?.vehicleNumber || "Unknown";
+        const newPlate = req.body.vehicleNumber.trim();
+        const normalizedNumber = newPlate.replace(/[^A-Z0-9\u0900-\u097F]/gi, "").toUpperCase();
+
+        let vehicle = await Vehicle.findOne({
+          $or: [
+            { vehicleNumber: newPlate },
+            { vehicleNumber: normalizedNumber },
+          ],
+        });
+
+        if (!vehicle) {
+          vehicle = await Vehicle.create({
+            vehicleNumber: newPlate,
+            vehicleType: req.body.vehicleType || violation.vehicleId?.vehicleType || "Other",
+            brand: "Manual/Corrected",
+            model: "Manual/Corrected",
+            registrationStatus: "Unregistered",
+          });
+        }
+
+        violation.vehicleId = vehicle._id;
+        auditRemarks = `Plate corrected from '${oldPlate}' to '${newPlate}'. ${req.body.remarks || ''}`.trim();
+      }
+
+      if ((req.body.status && req.body.status !== violation.status) || req.body.vehicleNumber) {
         violation.statusHistory.push({
-          status: req.body.status,
+          status: req.body.status || violation.status,
           changedBy: req.user._id,
-          remarks: req.body.remarks || "Status updated manually"
+          date: Date.now(),
+          remarks: auditRemarks
         });
       }
 
@@ -230,7 +263,6 @@ const updateViolation = async (req, res) => {
 
         const existingSettlement = await Settlement.findOne({ violationLineId: violation._id });
         if (!existingSettlement) {
-          const rule = await Rule.findById(violation.violationTypeId?.trafficRuleId);
           await Settlement.create({
             violationLineId: violation._id,
             policeId: req.user._id,

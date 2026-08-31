@@ -10,8 +10,9 @@ from PIL import Image
 import easyocr
 import re
 from datetime import datetime, timezone
+from nepali_plate_parser import parse_and_validate_nepali_plate
 
-app = FastAPI(title="TVDS AI Vision Core", version="2.1.0")
+app = FastAPI(title="TVDS AI Vision Core", version="2.2.0")
 security = HTTPBearer(auto_error=False)
 
 # Configurable Environment Constants
@@ -43,6 +44,44 @@ async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(sec
     return credentials
 
 
+def correct_plate_perspective(plate_img):
+    """
+    Detects skew angle of license plate and applies rotation/affine transform to align text horizontally.
+    """
+    if plate_img is None or plate_img.size == 0:
+        return plate_img
+
+    gray = cv2.cvtColor(plate_img, cv2.COLOR_BGR2GRAY) if len(plate_img.shape) == 3 else plate_img
+    edges = cv2.Canny(gray, 50, 200, apertureSize=3)
+
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return plate_img
+
+    largest_cnt = max(contours, key=cv2.contourArea)
+    if cv2.contourArea(largest_cnt) < (plate_img.shape[0] * plate_img.shape[1] * 0.10):
+        return plate_img
+
+    rect = cv2.minAreaRect(largest_cnt)
+    angle = rect[-1]
+
+    # Normalize rotation angle
+    if angle < -45:
+        angle = 90 + angle
+    elif angle > 45:
+        angle = angle - 90
+
+    # Rotate only if significant skew detected (-35 to +35 deg)
+    if abs(angle) > 1.5 and abs(angle) < 35:
+        (h, w) = plate_img.shape[:2]
+        center = (w // 2, h // 2)
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        rotated = cv2.warpAffine(plate_img, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+        return rotated
+
+    return plate_img
+
+
 def preprocess_plate_image(plate_img):
     """
     Enhances contrast, applies CLAHE and adaptive thresholding for clear OCR text.
@@ -50,87 +89,32 @@ def preprocess_plate_image(plate_img):
     if plate_img is None or plate_img.size == 0:
         return None
 
-    # Resize if too small
+    # Step 1: Bilinear upscaling for low resolution plate crops (min width: 300px)
     h, w = plate_img.shape[:2]
-    if w < 160 or h < 60:
-        scale = max(160 / max(w, 1), 60 / max(h, 1))
+    if w < 300 or h < 90:
+        scale = max(300 / max(w, 1), 90 / max(h, 1))
         new_w, new_h = int(w * scale), int(h * scale)
         plate_img = cv2.resize(plate_img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
 
-    # Convert to grayscale
-    gray = cv2.cvtColor(plate_img, cv2.COLOR_BGR2GRAY) if len(plate_img.shape) == 3 else plate_img
+    # Step 2: Perspective deskewing
+    deskewed = correct_plate_perspective(plate_img)
 
-    # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    # Step 3: Grayscale conversion
+    gray = cv2.cvtColor(deskewed, cv2.COLOR_BGR2GRAY) if len(deskewed.shape) == 3 else deskewed
+
+    # Step 4: CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
     enhanced = clahe.apply(gray)
 
-    # Denoise
+    # Step 5: Bilateral filter to smooth noise while preserving sharp character edges
     denoised = cv2.bilateralFilter(enhanced, 9, 75, 75)
     return denoised
 
 
-def parse_nepali_plate_syntax(ocr_results):
-    """
-    Parses OCR results according to Nepal license plate grammar standards:
-    1. Embossed Latin: [PROVINCE/ZONE] [LOT] [CATEGORY] [4-DIGIT NUMBER] (e.g., 'BA 21 CHA 1234', 'PROV 3 PA 5678')
-    2. Devanagari: [प्रदेश/अञ्चल] [लट] [प्रकार: च/प/ख/क/ज/बा/झ] [४ अंक] (e.g., 'बा २१ च १२३४', 'को १ प ९८७६')
-    3. Multi-line ordering: Sorts upper line (Zone/Lot) before lower line (Number).
-    """
-    if not ocr_results:
-        return None, 0.0
-
-    # Sort lines vertically by y-coordinate to support 2-line two-wheeler plates
-    sorted_lines = sorted(ocr_results, key=lambda item: item[0][0][1])
-
-    all_text_tokens = []
-    confidences = []
-
-    for bbox, text, prob in sorted_lines:
-        clean = text.strip()
-        if clean:
-            all_text_tokens.append(clean)
-            confidences.append(prob)
-
-    if not all_text_tokens:
-        return None, 0.0
-
-    full_raw = " ".join(all_text_tokens).upper()
-    avg_conf = sum(confidences) / len(confidences) if confidences else 0.0
-
-    # Clean characters (Allow Latin A-Z, 0-9, Devanagari Unicode \u0900-\u097F, spaces and hyphens)
-    filtered = re.sub(r'[^A-Z0-9\u0900-\u097F\s\-]', '', full_raw)
-    words = [w for w in filtered.split() if len(w) > 0]
-    normalized_str = "".join(words)
-
-    # 1. Check for standard Embossed English Plate format
-    # Patterns like: BA 21 CHA 1234, PROV 3 01 023 PA 4567, 01 023 PA 4567
-    embossed_match = re.search(r'(?:(?:PROV|PROVINCE)\s*\d{1,2}|BA|KO|GA|LU|KA|SU|ME|SE|BHE|RA|DHA|JA|SA)?\s*(\d{1,3})\s*(PA|CHA|KHA|KA|JA|BA|GHA|TA|THA|DA|DHA|YA|RA|LA|VA|SA|HA)\s*(\d{3,4})', filtered)
-    if embossed_match:
-        prefix = embossed_match.group(0).strip()
-        return prefix, min(1.0, avg_conf + 0.15)
-
-    # 2. Check for standard Devanagari Plate format
-    # Patterns like: बा २१ च १२३४, प्रदेश ३-०२-००१ च १२३४
-    devanagari_match = re.search(r'([\u0900-\u097F\d\-]+)\s*([०-९\d]{1,4})\s*([चपखकजबाझगघतथदधयरलवशषसह])\s*([०-९\d]{3,4})', filtered)
-    if devanagari_match:
-        plate_str = devanagari_match.group(0).strip()
-        return plate_str, min(1.0, avg_conf + 0.15)
-
-    # 3. Fallback: Alphanumeric string with at least letters and numbers
-    has_letters = bool(re.search(r'[A-Z\u0900-\u0965\u0970-\u097F]', normalized_str))
-    has_numbers = bool(re.search(r'[0-9\u0966-\u096F]', normalized_str))
-
-    if len(normalized_str) >= 4 and has_letters and has_numbers:
-        return " ".join(words), avg_conf
-
-    return (normalized_str, avg_conf) if len(normalized_str) >= 4 else (None, 0.0)
-
-
 def extract_plate_number(img, vehicle_bbox):
     """
-    Two-Stage ANPR:
-    1. Localizes the lower portion of the vehicle crop (where plates reside) or high contrast plate area.
-    2. Runs enhanced OCR with Nepali syntax parsing.
+    Target ANPR Pipeline:
+    Vehicle BBox -> Candidate Plate Localization -> Perspective Correction -> Enhancement -> EasyOCR -> Nepali Parser
     """
     x1, y1, x2, y2 = [int(x) for x in vehicle_bbox]
     h, w, _ = img.shape
@@ -139,34 +123,71 @@ def extract_plate_number(img, vehicle_bbox):
 
     vehicle_crop = img[y1:y2, x1:x2]
     if vehicle_crop.size == 0:
-        return None, 0.0
+        return {
+            "raw_ocr": "",
+            "normalized_plate": "Unknown",
+            "formatted_display": "Unknown",
+            "plate_format": "UNKNOWN",
+            "confidence": 0.0,
+            "is_valid_syntax": False,
+            "plate_bbox": None,
+            "requires_review": True,
+            "review_reason": "Empty vehicle crop"
+        }
 
     vh, vw = vehicle_crop.shape[:2]
 
-    # Crop lower 60% of vehicle where license plate is typically located to eliminate roof/window noise
-    lower_crop = vehicle_crop[int(vh * 0.40):vh, 0:vw]
+    # Target lower 60% of vehicle where license plate is positioned
+    lower_offset_y = int(vh * 0.40)
+    lower_crop = vehicle_crop[lower_offset_y:vh, 0:vw]
     target_crop = lower_crop if lower_crop.size > 0 else vehicle_crop
+
+    plate_global_y1 = int(y1 + (lower_offset_y if lower_crop.size > 0 else 0))
+    plate_global_y2 = int(y2)
+    plate_global_x1 = int(x1)
+    plate_global_x2 = int(x2)
+    plate_bbox = [plate_global_x1, plate_global_y1, plate_global_x2, plate_global_y2]
 
     # Preprocess image
     processed_crop = preprocess_plate_image(target_crop)
     if processed_crop is None:
-        return None, 0.0
+        return {
+            "raw_ocr": "",
+            "normalized_plate": "Unknown",
+            "formatted_display": "Unknown",
+            "plate_format": "UNKNOWN",
+            "confidence": 0.0,
+            "is_valid_syntax": False,
+            "plate_bbox": plate_bbox,
+            "requires_review": True,
+            "review_reason": "Plate preprocessing failed"
+        }
 
     try:
-        # Run EasyOCR with contrast enhancements
         results = reader.readtext(processed_crop)
-        plate_text, conf = parse_nepali_plate_syntax(results)
+        parsed = parse_and_validate_nepali_plate(results)
 
-        # Fallback to full vehicle crop if lower slice gave nothing
-        if not plate_text and lower_crop.size > 0:
+        # Fallback to full vehicle crop if lower slice yielded nothing
+        if parsed["normalized_plate"] == "Unknown" and lower_crop.size > 0:
             full_processed = preprocess_plate_image(vehicle_crop)
             results_full = reader.readtext(full_processed)
-            plate_text, conf = parse_nepali_plate_syntax(results_full)
+            parsed = parse_and_validate_nepali_plate(results_full)
 
-        return plate_text, conf
+        parsed["plate_bbox"] = plate_bbox
+        return parsed
     except Exception as e:
         print(f"ANPR OCR Warning: {e}")
-        return None, 0.0
+        return {
+            "raw_ocr": "",
+            "normalized_plate": "Unknown",
+            "formatted_display": "Unknown",
+            "plate_format": "UNKNOWN",
+            "confidence": 0.0,
+            "is_valid_syntax": False,
+            "plate_bbox": plate_bbox,
+            "requires_review": True,
+            "review_reason": f"OCR Exception: {str(e)}"
+        }
 
 
 def detect_light_color(img, bbox):
@@ -181,7 +202,6 @@ def detect_light_color(img, bbox):
 
     hsv = cv2.cvtColor(light_crop, cv2.COLOR_BGR2HSV)
 
-    # Red wraps around 0 and 180 in HSV
     lower_red1 = np.array([0, 70, 50])
     upper_red1 = np.array([10, 255, 255])
     lower_red2 = np.array([170, 70, 50])
@@ -211,7 +231,6 @@ def evaluate_rider_helmet(img, rider_bbox):
     """
     Evaluates helmet compliance on a motorcycle rider.
     Analyzes the head region (top 35% of rider bbox) for headgear visual characteristics.
-    Returns: (is_wearing_helmet: bool, confidence: float)
     """
     x1, y1, x2, y2 = [int(x) for x in rider_bbox]
     h, w, _ = img.shape
@@ -222,24 +241,18 @@ def evaluate_rider_helmet(img, rider_bbox):
     head_crop = img[y1:y1 + head_h, x1:x2]
 
     if head_crop.size == 0 or head_crop.shape[0] < 10 or head_crop.shape[1] < 10:
-        return True, 0.50  # Default to neutral on inconclusive crop
+        return True, 0.50
 
     gray = cv2.cvtColor(head_crop, cv2.COLOR_BGR2GRAY)
-    
-    # Helmets have high edge smoothness on top and distinct specular reflections
     edges = cv2.Canny(gray, 50, 150)
     edge_density = np.sum(edges > 0) / (edges.shape[0] * edges.shape[1])
 
-    # HSV saturation / brightness check
     hsv_head = cv2.cvtColor(head_crop, cv2.COLOR_BGR2HSV)
     brightness_std = np.std(hsv_head[:, :, 2])
 
-    # Distinctive contrast heuristics (hair/skin has high texture variance, helmet has smoother shells)
     if edge_density > 0.30 and brightness_std > 50:
-        # Texture pattern indicates exposed face / hair
         return False, 0.78
     elif edge_density < 0.20:
-        # Smooth shell surface indicates helmet
         return True, 0.82
 
     return True, 0.65
@@ -248,22 +261,18 @@ def evaluate_rider_helmet(img, rider_bbox):
 def get_riders_for_motorcycle(motorcycle_bbox, persons):
     """
     Associates detected persons with a specific motorcycle using spatial containment.
-    Returns a list of person detections seated on this bike.
     """
     mx1, my1, mx2, my2 = motorcycle_bbox
-    mw = mx2 - mx1
     riders = []
 
     for p in persons:
         px1, py1, px2, py2 = p['bbox']
         pw = px2 - px1
-        
-        # Horizontal overlap check (person must be within bike's horizontal zone)
+
         overlap_x1 = max(mx1 - 25, px1)
         overlap_x2 = min(mx2 + 25, px2)
         overlap_w = max(0, overlap_x2 - overlap_x1)
 
-        # Vertical check: person's bottom must be near the bike's seat/body
         is_above_or_on_bike = (py2 >= my1 - 20) and (py1 <= my2)
 
         if overlap_w > (pw * 0.40) and is_above_or_on_bike:
@@ -277,7 +286,7 @@ def process_image(img, frame_idx=0):
     Runs full inference on a single image frame:
     - Object detection (Vehicles, Riders, Traffic Lights)
     - Spatial rider & helmet analysis
-    - Two-stage ANPR license plate recognition
+    - Modular Nepali ANPR with perspective deskewing and format validation
     - Violation classification with configurable review flags
     """
     start_time = cv2.getTickCount()
@@ -304,19 +313,27 @@ def process_image(img, frame_idx=0):
     # 2. Extract Primary Vehicle & License Plate (ANPR)
     detected_vehicle_number = "Unknown"
     detected_vehicle_type = "Other"
-    plate_conf = 0.0
+    plate_info = {
+        "raw_ocr": "",
+        "normalized_plate": "Unknown",
+        "formatted_display": "Unknown",
+        "plate_format": "UNKNOWN",
+        "confidence": 0.0,
+        "is_valid_syntax": False,
+        "plate_bbox": None,
+        "requires_review": True,
+        "review_reason": "No vehicle detected"
+    }
 
     vehicles = [d for d in detections if d['class'] in VEHICLE_CLASS_MAPPING]
     if vehicles:
-        # Sort by bounding box area to focus on prominent foreground vehicle
         vehicles.sort(key=lambda x: (x['bbox'][2] - x['bbox'][0]) * (x['bbox'][3] - x['bbox'][1]), reverse=True)
         primary_vehicle = vehicles[0]
         detected_vehicle_type = VEHICLE_CLASS_MAPPING.get(primary_vehicle['class'], 'Other')
 
-        extracted_plate, p_conf = extract_plate_number(img, primary_vehicle['bbox'])
-        if extracted_plate:
-            detected_vehicle_number = extracted_plate
-            plate_conf = p_conf
+        plate_info = extract_plate_number(img, primary_vehicle['bbox'])
+        if plate_info["formatted_display"] != "Unknown":
+            detected_vehicle_number = plate_info["formatted_display"]
 
     persons = [d for d in detections if d['class'] == 'person']
     motorcycles = [d for d in detections if d['class'] == 'motorcycle']
@@ -324,7 +341,7 @@ def process_image(img, frame_idx=0):
     # 3. Spatial Motorcycle Rider & Helmet Analysis
     for motor in motorcycles:
         riders = get_riders_for_motorcycle(motor['bbox'], persons)
-        
+
         # Triple Riding Check
         if len(riders) >= 3:
             rider_conf = sum(r['confidence'] for r in riders) / len(riders)
@@ -341,7 +358,7 @@ def process_image(img, frame_idx=0):
                 "timestamp": timestamp_str
             })
 
-        # No Helmet Check for each rider on the bike
+        # No Helmet Check for each rider
         for rider in riders:
             has_helmet, helmet_conf = evaluate_rider_helmet(img, rider['bbox'])
             if not has_helmet:
@@ -358,7 +375,7 @@ def process_image(img, frame_idx=0):
                         "frame_number": frame_idx,
                         "timestamp": timestamp_str
                     })
-                    break  # One helmet violation per motorcycle is sufficient
+                    break
 
     # 4. Traffic Light & Zebra Crossing Violations
     traffic_lights = [d for d in detections if d['class'] == 'traffic light']
@@ -370,7 +387,6 @@ def process_image(img, frame_idx=0):
 
         if current_light_color == "Red":
             for v in vehicles:
-                # Red Light Jump (passing upper intersection line)
                 if v['bbox'][1] < img.shape[0] * 0.40:
                     v_conf = round(float(v['confidence'] * 0.85), 4)
                     violations.append({
@@ -385,7 +401,6 @@ def process_image(img, frame_idx=0):
                         "timestamp": timestamp_str
                     })
 
-                # Zebra Crossing Encroachment
                 if v['bbox'][3] > img.shape[0] * 0.72:
                     v_conf = round(float(v['confidence'] * 0.80), 4)
                     violations.append({
@@ -403,7 +418,6 @@ def process_image(img, frame_idx=0):
     end_time = cv2.getTickCount()
     latency = (end_time - start_time) / cv2.getTickFrequency() * 1000
 
-    # Calculate overall frame accuracy score
     if detections:
         avg_conf = sum(d['confidence'] for d in detections) / len(detections)
         accuracy_score = round(avg_conf * 100, 1)
@@ -416,10 +430,11 @@ def process_image(img, frame_idx=0):
         "vehicle_number": detected_vehicle_number,
         "vehicle_type": detected_vehicle_type,
         "light_color": current_light_color,
+        "plate_details": plate_info,
         "meta": {
-            "engine": "YOLOv8-N + Dual-Stage Nepali ANPR",
+            "engine": "YOLOv8-N + Modular Nepali ANPR",
             "latency_ms": round(latency, 2),
-            "model_version": "2.1.0",
+            "model_version": "2.2.0",
             "threads": 8,
             "accuracy_score": accuracy_score,
             "detection_count": len(detections),
@@ -430,12 +445,12 @@ def process_image(img, frame_idx=0):
 
 @app.get("/")
 def read_root():
-    return {"status": "operational", "service": "TVDS AI Vision Core", "version": "2.1.0"}
+    return {"status": "operational", "service": "TVDS AI Vision Core", "version": "2.2.0"}
 
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "engine": "YOLOv8-N + EasyOCR", "version": "2.1.0"}
+    return {"status": "ok", "engine": "YOLOv8-N + EasyOCR", "version": "2.2.0"}
 
 
 @app.post("/detect")
@@ -481,17 +496,18 @@ async def detect_violations(
 
             cap.release()
 
-            # Aggregate results across frames
             aggregated_violations = {}
             aggregated_detections = []
             total_accuracy = 0
             best_vehicle_number = "Unknown"
             best_vehicle_type = "Other"
+            best_plate_details = None
 
             for result in all_results:
                 if result['vehicle_number'] != "Unknown" and best_vehicle_number == "Unknown":
                     best_vehicle_number = result['vehicle_number']
                     best_vehicle_type = result['vehicle_type']
+                    best_plate_details = result.get('plate_details')
 
                 for v in result['violations']:
                     key = v['type']
@@ -518,11 +534,12 @@ async def detect_violations(
                 "violations": list(aggregated_violations.values()),
                 "vehicle_number": best_vehicle_number,
                 "vehicle_type": best_vehicle_type,
+                "plate_details": best_plate_details,
                 "light_color": all_results[-1]['light_color'] if all_results else "Unknown",
                 "meta": {
-                    "engine": "YOLOv8-N + Dual-Stage Nepali ANPR",
+                    "engine": "YOLOv8-N + Modular Nepali ANPR",
                     "latency_ms": round(sum(r['meta']['latency_ms'] for r in all_results) / len(all_results), 2) if all_results else 0,
-                    "model_version": "2.1.0",
+                    "model_version": "2.2.0",
                     "threads": 8,
                     "accuracy_score": avg_accuracy,
                     "detection_count": len(aggregated_detections),
@@ -537,7 +554,6 @@ async def detect_violations(
             if temp_path and os.path.exists(temp_path):
                 os.unlink(temp_path)
     else:
-        # Single image processing
         nparr = np.frombuffer(contents, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         if img is None:
