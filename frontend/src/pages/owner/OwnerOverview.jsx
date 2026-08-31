@@ -132,7 +132,7 @@ const OwnerOverview = () => {
 
           {/* --- QUICK ACTIONS --- */}
           <div className="space-y-6">
-            <Card className="hover:border-primary-500 transition-all cursor-pointer group" onClick={() => navigate("/vehicles")}>
+            <Card className="hover:border-primary-500 transition-all cursor-pointer group" onClick={() => navigate("/vehicle")}>
               <CardContent className="p-8 flex items-center space-x-6">
                 <div className="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center group-hover:bg-primary-600 group-hover:text-white transition-colors">
                   <Car size={32} />

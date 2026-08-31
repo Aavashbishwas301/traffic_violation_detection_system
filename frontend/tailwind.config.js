@@ -25,6 +25,12 @@ export default {
           emerald: '#10b981',
           amber: '#f59e0b',
         },
+        classy: {
+          navy: '#0A1128',
+          gold: '#D4AF37',
+          pearl: '#FAFAFA',
+          slate: '#1E293B'
+        },
         neutral: {
           50: '#f8fafc',
           100: '#f1f5f9',

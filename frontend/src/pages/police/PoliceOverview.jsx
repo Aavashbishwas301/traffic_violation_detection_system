@@ -11,7 +11,7 @@ import { Button } from "../../components/ui/Button.jsx";
 const PoliceOverview = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [violations, setViolations] = useState([]);
+  const [policeStats, setPoliceStats] = useState({ todaysCatch: 0, manualEntries: 0, pendingReview: 0 });
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,10 +19,10 @@ const PoliceOverview = () => {
     const fetchData = async () => {
       try {
         const [violationRes, statsRes] = await Promise.all([
-          api.get("/api/violations"),
+          api.get("/api/violations/police/stats"),
           api.get("/api/admin/reports"),
         ]);
-        setViolations(violationRes.data);
+        setPoliceStats(violationRes.data);
         setStats(statsRes.data);
       } catch (err) {
         console.error("Fetch failed", err);
@@ -46,15 +46,13 @@ const PoliceOverview = () => {
   const statCards = [
     {
       title: "Today's Catch",
-      value: violations.filter(
-        (v) => new Date(v.createdAt).toDateString() === new Date().toDateString()
-      ).length,
+      value: policeStats.todaysCatch,
       icon: Camera,
       colorClass: "text-primary-600 bg-primary-50"
     },
     {
       title: "Manual Entry",
-      value: violations.filter((v) => !v.aiDetected).length,
+      value: policeStats.manualEntries,
       icon: Edit3,
       colorClass: "text-amber-600 bg-amber-50"
     },
@@ -66,7 +64,7 @@ const PoliceOverview = () => {
     },
     {
       title: "Active Alerts",
-      value: 2,
+      value: 0,
       icon: Bell,
       colorClass: "text-rose-600 bg-rose-50"
     },
@@ -100,7 +98,7 @@ const PoliceOverview = () => {
               <CardHeader className="pb-2 text-center">
                 <CardDescription className="text-slate-300 uppercase tracking-widest text-xs font-semibold">Pending Review</CardDescription>
                 <CardTitle className="text-6xl font-black text-white mt-2">
-                  {violations.filter((v) => v.status === "Pending").length}
+                  {policeStats.pendingReview}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4">

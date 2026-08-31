@@ -6,6 +6,7 @@ import {
   getMyViolations,
   updateViolation,
   deleteViolation,
+  getPoliceStats,
 } from '../controllers/violationController.js';
 import { protect, police } from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
@@ -20,6 +21,7 @@ router.get('/', protect, police, getViolations);
 router.get('/my', protect, getMyViolations);
 
 // New Police management routes
+router.get('/police/stats', protect, police, getPoliceStats);
 router.put('/:id', protect, police, updateViolation);
 router.delete('/:id', protect, police, deleteViolation);
 

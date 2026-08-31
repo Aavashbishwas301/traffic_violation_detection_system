@@ -154,48 +154,58 @@ const AdminOverview = () => {
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <DataTable
-                data={allViolations.slice(0, 6)}
-                pagination={false}
-                columns={[
-                  {
-                    header: "Event ID",
-                    accessorKey: "_id",
-                    cell: (v) => (
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500">
-                          <Camera size={14} />
+              {allViolations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 border-t border-slate-100 rounded-b-xl">
+                  <div className="w-16 h-16 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                    <Camera size={32} />
+                  </div>
+                  <h4 className="text-lg font-medium text-slate-900">No Violations Found</h4>
+                  <p className="text-sm text-slate-500 mt-1 max-w-[250px]">The grid is currently clear. No enforcement events have been recorded recently.</p>
+                </div>
+              ) : (
+                <DataTable
+                  data={allViolations.slice(0, 6)}
+                  pagination={false}
+                  columns={[
+                    {
+                      header: "Event ID",
+                      accessorKey: "_id",
+                      cell: (v) => (
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500">
+                            <Camera size={14} />
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-900">EVT-{v._id.slice(-6)}</div>
+                            <div className="text-xs text-slate-500">{v.location}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-slate-900">EVT-{v._id.slice(-6)}</div>
-                          <div className="text-xs text-slate-500">{v.location}</div>
-                        </div>
-                      </div>
-                    )
-                  },
-                  {
-                    header: "Vehicle Plate",
-                    accessorKey: "vehicleId.vehicleNumber",
-                    cell: (v) => <span className="font-mono">{v.vehicleId?.vehicleNumber || "UNKNOWN"}</span>
-                  },
-                  {
-                    header: "Violation Type",
-                    accessorKey: "violationType",
-                    cell: (v) => <Badge variant="secondary" className="font-normal">{v.violationType}</Badge>
-                  },
-                  {
-                    header: "Time",
-                    accessorKey: "violationDateTime",
-                    align: "right",
-                    className: "text-right",
-                    cell: (v) => (
-                      <span className="text-slate-500">
-                        {new Date(v.violationDateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    )
-                  }
-                ]}
-              />
+                      )
+                    },
+                    {
+                      header: "Vehicle Plate",
+                      accessorKey: "vehicleId.vehicleNumber",
+                      cell: (v) => <span className="font-mono">{v.vehicleId?.vehicleNumber || "UNKNOWN"}</span>
+                    },
+                    {
+                      header: "Violation Type",
+                      accessorKey: "violationType",
+                      cell: (v) => <Badge variant="secondary" className="font-normal">{v.violationType}</Badge>
+                    },
+                    {
+                      header: "Time",
+                      accessorKey: "violationDateTime",
+                      align: "right",
+                      className: "text-right",
+                      cell: (v) => (
+                        <span className="text-slate-500">
+                          {new Date(v.violationDateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      )
+                    }
+                  ]}
+                />
+              )}
             </CardContent>
           </Card>
 
@@ -217,19 +227,17 @@ const AdminOverview = () => {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center space-x-2">
                   <Database size={18} className="text-primary-600" />
-                  <span>System Health</span>
+                  <span>Backend Status</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-slate-500">All data centers and neural nodes are operating at optimal capacity.</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-700">Uptime</span>
-                    <span className="text-emerald-600">99.9%</span>
+                <p className="text-sm text-slate-500">Connected to the central database successfully.</p>
+                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-sm font-medium text-slate-700">API Connection</span>
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full w-[99.9%]"></div>
-                  </div>
+                  <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">Online</Badge>
                 </div>
               </CardContent>
             </Card>

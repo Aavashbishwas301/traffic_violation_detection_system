@@ -131,7 +131,9 @@ if (redisConnection) {
           aiDetected: true,
           aiConfidence: dv.confidence,
           status: "Unverified",
-          remarks: remarks || "AI Detected Violation",
+          remarks: dv.requiresReview
+            ? `[Review Required: ${dv.reviewReason || "Uncertain Confidence"}] ${remarks || "AI Detected Violation"}`
+            : (remarks || "AI Detected Violation"),
           appliedFineAmount: fineAmount,
           violationDateTime: Date.now(),
           statusHistory: [{

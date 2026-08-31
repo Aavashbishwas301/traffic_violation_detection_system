@@ -36,6 +36,7 @@
   .text-nepal {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-[#003893] to-[#DC143C];
   }
+
 }
 
 /* Custom Scrollbar */

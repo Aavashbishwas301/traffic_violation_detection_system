@@ -271,6 +271,31 @@ const deleteViolation = async (req, res) => {
   }
 };
 
+// @desc    Get Police Dashboard Stats
+// @route   GET /api/violations/police/stats
+// @access  Private (Police)
+const getPoliceStats = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [todaysCatch, manualEntries, unverified] = await Promise.all([
+      ViolationLine.countDocuments({ createdAt: { $gte: today } }),
+      ViolationLine.countDocuments({ aiDetected: false }),
+      ViolationLine.countDocuments({ status: "Unverified" })
+    ]);
+
+    res.json({
+      todaysCatch,
+      manualEntries,
+      pendingReview: unverified,
+    });
+  } catch (error) {
+    console.error("Get Police Stats Error:", error);
+    res.status(500).json({ message: "Error fetching police stats" });
+  }
+};
+
 export {
   uploadViolation,
   manualViolation,
@@ -278,4 +303,5 @@ export {
   getMyViolations,
   updateViolation,
   deleteViolation,
+  getPoliceStats,
 };
