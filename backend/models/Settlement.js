@@ -26,5 +26,8 @@ const settlementSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+settlementSchema.index({ violationLineId: 1 });
+settlementSchema.index({ paymentStatus: 1 });
+
 const Settlement = mongoose.model("Settlement", settlementSchema);
 export default Settlement;

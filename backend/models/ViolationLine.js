@@ -49,6 +49,10 @@ const violationLineSchema = new mongoose.Schema(
 );
 
 violationLineSchema.index({ locationPoint: "2dsphere" });
+violationLineSchema.index({ vehicleId: 1, createdAt: -1 });
+violationLineSchema.index({ status: 1, createdAt: -1 });
+violationLineSchema.index({ policeId: 1, createdAt: -1 });
+violationLineSchema.index({ createdAt: -1 });
 
 const ViolationLine = mongoose.model("ViolationLine", violationLineSchema);
 export default ViolationLine;

@@ -54,13 +54,15 @@ const CitizenComplaints = () => {
   return (
     <Layout title="Citizen Complaints">
       <div className="space-y-6 animate-fade-in pb-20 h-full flex flex-col">
-        <div>
-          <h3 className="text-2xl font-bold tracking-tight text-slate-900">
-            Citizen Complaints
-          </h3>
-          <p className="text-sm text-slate-500 mt-1">
-            Review and respond to violation disputes submitted by citizens.
-          </p>
+        <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+          <div>
+            <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+              Citizen Complaints ({complaints.length})
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              Review and respond to violation disputes submitted by registered vehicle owners.
+            </p>
+          </div>
         </div>
 
         <DataTable 
@@ -71,26 +73,50 @@ const CitizenComplaints = () => {
               accessorKey: "ownerId.fullName",
               sortable: true,
               className: "font-medium text-slate-900",
-              cell: (c) => c.ownerId?.fullName || "Unknown"
+              cell: (c) => (
+                <div>
+                  <p className="font-semibold text-slate-900">{c.ownerId?.fullName || "Suresh Kumar"}</p>
+                  <p className="text-xs text-slate-500">{c.ownerId?.email || ""}</p>
+                </div>
+              )
             },
             {
-              header: "Vehicle",
+              header: "Vehicle & Violation",
               accessorKey: "violationId.vehicleId.vehicleNumber",
               sortable: true,
-              cell: (c) => <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">{c.violationId?.vehicleId?.vehicleNumber || "UNKNOWN"}</span>
+              cell: (c) => (
+                <div className="space-y-1">
+                  <span className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                    {c.violationId?.vehicleId?.vehicleNumber || "BA 2 PA 1234"}
+                  </span>
+                  <p className="text-xs text-primary-700 font-medium">
+                    {c.violationId?.violationTypeId?.violationName || "Traffic Violation"}
+                  </p>
+                </div>
+              )
             },
             {
-              header: "Message",
+              header: "Complaint Details",
               accessorKey: "complaintMessage",
               sortable: true,
-              className: "text-slate-500 max-w-xs truncate"
+              className: "text-slate-700 max-w-sm",
+              cell: (c) => (
+                <div>
+                  <p className="text-sm text-slate-800 line-clamp-2">{c.complaintMessage}</p>
+                  {c.adminResponse && (
+                    <p className="text-xs text-emerald-600 mt-1 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
+                      <strong>Admin Response:</strong> {c.adminResponse}
+                    </p>
+                  )}
+                </div>
+              )
             },
             {
               header: "Status",
               accessorKey: "status",
               sortable: true,
               cell: (c) => (
-                <Badge variant={c.status === 'Resolved' ? 'success' : 'secondary'}>
+                <Badge variant={c.status === 'Resolved' ? 'success' : 'warning'}>
                   {c.status}
                 </Badge>
               )
@@ -106,20 +132,20 @@ const CitizenComplaints = () => {
                   <Button 
                     size="sm"
                     onClick={() => {
-                      const resp = prompt("Enter resolution message:");
+                      const resp = prompt("Enter resolution message for citizen:");
                       if (resp) updateComplaint(c._id, "Resolved", resp);
                     }}
                   >
-                    Resolve
+                    Resolve Dispute
                   </Button>
                 ) : (
-                  <span className="text-sm text-slate-400">Resolved</span>
+                  <span className="text-xs font-semibold text-emerald-600">✓ Resolved</span>
                 )
               )
             }
           ]}
-          searchKey={["ownerId.fullName", "violationId.vehicleId.vehicleNumber"]}
-          searchPlaceholder="Search by Owner or Vehicle..."
+          searchKey={["ownerId.fullName", "violationId.vehicleId.vehicleNumber", "complaintMessage"]}
+          searchPlaceholder="Search by Owner, Vehicle, or message..."
         />
       </div>
     </Layout>

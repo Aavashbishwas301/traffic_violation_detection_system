@@ -37,6 +37,7 @@ const CitizenComplaints = lazy(() => import("./pages/admin/CitizenComplaints.jsx
 const GlobalReports = lazy(() => import("./pages/admin/GlobalReports.jsx"));
 const SystemNotifications = lazy(() => import("./pages/admin/SystemNotifications.jsx"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings.jsx"));
+const CameraCalibration = lazy(() => import("./pages/admin/CameraCalibration.jsx"));
 
 // --- Police Pages ---
 const PoliceOverview = lazy(() => import("./pages/police/PoliceOverview.jsx"));
@@ -120,6 +121,7 @@ function App() {
                   <Route path="/complaints-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><CitizenComplaints /></ProtectedRoute>} />
                   <Route path="/global-reports" element={<ProtectedRoute allowedRoles={["Admin"]}><GlobalReports /></ProtectedRoute>} />
                   <Route path="/notifications-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><SystemNotifications /></ProtectedRoute>} />
+                  <Route path="/camera-calibration" element={<ProtectedRoute allowedRoles={["Admin", "TrafficPolice"]}><CameraCalibration /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute allowedRoles={["Admin"]}><AdminSettings /></ProtectedRoute>} />
 
                   {/* --- Police Specific Routes --- */}

@@ -14,186 +14,189 @@ import { sendNotification } from '../socket.js';
 export let violationQueue = null;
 let worker = null;
 
-if (redisConnection) {
-  violationQueue = new Queue('violation-queue', {
-    connection: redisConnection
-  });
+export const processViolationJob = async (jobData, jobId = `direct-${Date.now()}`) => {
+  const { filePath, originalname, location, latitude, longitude, remarks, uploaderId } = jobData;
+  let { vehicleNumber } = jobData;
 
-  worker = new Worker('violation-queue', async (job) => {
-    const { filePath, originalname, location, latitude, longitude, remarks, uploaderId } = job.data;
-    let { vehicleNumber } = job.data;
+  try {
+    // 1. Call AI Service to detect violations AND vehicle number (OCR)
+    let fileStream;
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      const response = await axios.get(filePath, { responseType: 'stream' });
+      fileStream = response.data;
+    } else {
+      fileStream = fs.createReadStream(filePath);
+    }
 
-    try {
-      // 1. Call AI Service to detect violations AND vehicle number (OCR)
-      let fileStream;
-      if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-        const response = await axios.get(filePath, { responseType: 'stream' });
-        fileStream = response.data;
-      } else {
-        fileStream = fs.createReadStream(filePath);
+    const formData = new FormData();
+    formData.append(
+      "file",
+      fileStream,
+      originalname
+    );
+
+    const aiResponse = await axios.post(
+      `${process.env.AI_SERVICE_URL || 'http://localhost:8000'}/detect`,
+      formData,
+      {
+        headers: {
+          ...formData.getHeaders(),
+          Authorization: `Bearer ${process.env.AI_API_KEY || "tvds-ai-key-dev"}`,
+        },
       }
+    );
 
-      const formData = new FormData();
-      formData.append(
-        "file",
-        fileStream,
-        originalname
-      );
+    const {
+      violations: detectedViolations,
+      vehicle_number: aiVehicleNumber,
+      vehicle_type: aiVehicleType,
+      meta,
+    } = aiResponse.data;
 
-      const aiResponse = await axios.post(
-        `${process.env.AI_SERVICE_URL}/detect`,
-        formData,
+    // 2. Determine vehicle number
+    if (!vehicleNumber || vehicleNumber === "Unknown" || vehicleNumber === "") {
+      vehicleNumber = aiVehicleNumber || "Unknown";
+    }
+
+    const normalizedNumber = vehicleNumber
+      .replace(/[^A-Z0-9]/gi, "")
+      .toUpperCase();
+
+    // 3. Find or create vehicle and owner
+    let vehicle = await Vehicle.findOne({
+      $or: [
+        { vehicleNumber: vehicleNumber },
+        { vehicleNumber: normalizedNumber },
         {
-          headers: {
-            ...formData.getHeaders(),
-            Authorization: `Bearer ${process.env.AI_API_KEY || "tvds-ai-key-dev"}`,
-          },
+          vehicleNumber: new RegExp(
+            "^" + normalizedNumber.split("").join("\\s*") + "$",
+            "i",
+          ),
+        },
+      ],
+    });
+
+    if (!vehicle) {
+      vehicle = await Vehicle.create({
+        vehicleNumber,
+        vehicleType: aiVehicleType || "Other",
+        ownerId: null,
+        brand: "Unknown",
+        model: "Unknown",
+        registrationStatus: "Unregistered",
+      });
+    }
+
+    const results = [];
+
+    // 4. Process each detected violation
+    for (const dv of (detectedViolations || [])) {
+      let vType = await ViolationType.findOne({ violationName: dv.type }).populate("trafficRuleId");
+      
+      if (!vType) {
+        let rule = await Rule.findOne({ violationType: dv.type });
+        if (!rule) {
+          rule = await Rule.create({
+            ruleName: `${dv.type} Rule`,
+            description: `Auto-generated rule for ${dv.type}`,
+            violationType: dv.type,
+            fineAmount: 1000,
+          });
         }
-      );
-
-      const {
-        violations: detectedViolations,
-        vehicle_number: aiVehicleNumber,
-        vehicle_type: aiVehicleType,
-        meta,
-      } = aiResponse.data;
-
-      // 2. Determine vehicle number
-      if (!vehicleNumber || vehicleNumber === "Unknown" || vehicleNumber === "") {
-        vehicleNumber = aiVehicleNumber || "Unknown";
+        vType = await ViolationType.create({
+          violationName: dv.type,
+          description: `Auto-detected ${dv.type}`,
+          severity: "Medium",
+          trafficRuleId: rule._id,
+        });
+        vType.trafficRuleId = rule;
       }
 
-      const normalizedNumber = vehicleNumber
-        .replace(/[^A-Z0-9]/gi, "")
-        .toUpperCase();
+      const fineAmount = vType?.trafficRuleId?.fineAmount || 1000;
+      const trackTag = dv.track_id ? `[Track #${dv.track_id}]` : '';
 
-      // 3. Find or create vehicle and owner
-      let vehicle = await Vehicle.findOne({
-        $or: [
-          { vehicleNumber: vehicleNumber },
-          { vehicleNumber: normalizedNumber },
-          {
-            vehicleNumber: new RegExp(
-              "^" + normalizedNumber.split("").join("\\s*") + "$",
-              "i",
-            ),
-          },
-        ],
+      const isUncertain = dv.requiresReview || (dv.confidence < 0.75);
+      const violationStatus = isUncertain ? "Unverified" : "Verified";
+      const reviewNote = dv.reviewReason ? ` [Review: ${dv.reviewReason}]` : '';
+
+      const locationPoint = (longitude && latitude) ? {
+        type: "Point",
+        coordinates: [parseFloat(longitude), parseFloat(latitude)]
+      } : undefined;
+
+      const violation = await ViolationLine.create({
+        violationTypeId: vType._id,
+        vehicleId: vehicle._id,
+        policeId: uploaderId,
+        location: location || "Digital Camera #1",
+        locationPoint,
+        appliedFineAmount: fineAmount,
+        aiDetected: true,
+        aiConfidence: dv.confidence || 0.85,
+        status: violationStatus,
+        verifiedAt: (violationStatus === "Verified") ? Date.now() : null,
+        remarks: `${remarks ? remarks + " | " : ""}${trackTag} AI Detection (${(dv.confidence * 100).toFixed(1)}%)${reviewNote}`.trim(),
+        violationDateTime: Date.now(),
+        statusHistory: [{
+          status: violationStatus,
+          changedBy: uploaderId,
+          remarks: `System initialized by AI queue ${trackTag}`.trim()
+        }]
       });
 
-      if (!vehicle) {
-        vehicle = await Vehicle.create({
-          vehicleNumber,
-          vehicleType: aiVehicleType || "Other",
-          ownerId: null,
-          brand: "Unknown",
-          model: "Unknown",
-          registrationStatus: "Unregistered",
-        });
-      }
+      await Evidence.create({
+        violationLineId: violation._id,
+        evidenceType: "Image",
+        imageUrl: filePath,
+        cameraLocation: location || "Static Camera",
+        uploadedBy: uploaderId,
+      });
 
-      const actualOwnerId = vehicle.ownerId || null;
-      const results = [];
+      const fine = await Settlement.create({
+        violationLineId: violation._id,
+        policeId: uploaderId,
+        amountPaid: 0,
+        paymentMethod: "N/A",
+        paymentStatus: "Pending",
+      });
 
-      // 4. Process each detected violation
-      for (const dv of detectedViolations) {
-        let vType = await ViolationType.findOne({ violationName: dv.type }).populate("trafficRuleId");
-        
-        if (!vType) {
-          console.log(`ViolationType '${dv.type}' not found in DB. Auto-creating fallback...`);
-          const fallbackRule = await Rule.create({
-            violationType: dv.type,
-            description: `Auto-generated rule for AI detection: ${dv.type}`,
-            fineAmount: 500
-          });
-          vType = await ViolationType.create({
-            trafficRuleId: fallbackRule._id,
-            violationName: dv.type,
-            description: `Auto-generated type for AI detection: ${dv.type}`,
-            severityLevel: 'Medium',
-            isAIEnabled: true
-          });
-        }
-
-        const fineAmount = vType?.trafficRuleId?.fineAmount || 500;
-
-        const violation = await ViolationLine.create({
-          violationTypeId: vType?._id,
-          vehicleId: vehicle._id,
-          policeId: uploaderId,
-          location: location || "Detected Location",
-          ...(latitude && longitude ? {
-            locationPoint: {
-              type: "Point",
-              coordinates: [parseFloat(longitude), parseFloat(latitude)]
-            }
-          } : {}),
-          aiDetected: true,
-          aiConfidence: dv.confidence,
-          status: "Unverified",
-          remarks: dv.requiresReview
-            ? `[Review Required: ${dv.reviewReason || "Uncertain Confidence"}] ${remarks || "AI Detected Violation"}`
-            : (remarks || "AI Detected Violation"),
-          appliedFineAmount: fineAmount,
-          violationDateTime: Date.now(),
-          statusHistory: [{
-            status: "Unverified",
-            changedBy: uploaderId,
-            remarks: "System initialized by AI queue"
-          }]
-        });
-
-        await Evidence.create({
-          violationLineId: violation._id,
-          evidenceType: "Image",
-          imageUrl: filePath,
-          cameraLocation: location || "Static Camera",
-          uploadedBy: uploaderId,
-        });
-
-        const fine = await Settlement.create({
-          violationLineId: violation._id,
-          policeId: uploaderId,
-          amountPaid: 0,
-          paymentMethod: "N/A",
-          paymentStatus: "Pending",
-        });
-
-        results.push({ violation, fine });
-      }
-
-      // Notify frontend upon success
-      sendNotification('violation_processed', {
-        jobId: job.id,
-        status: 'completed',
-        vehicleNumber,
-        resultsCount: results.length,
-        meta
-      }, `user:${uploaderId}`);
-
-      return { vehicleNumber, resultsCount: results.length, meta };
-    } catch (error) {
-      console.error("Job Error:", error);
-      
-      // Notify frontend upon failure
-      sendNotification('violation_processed', {
-        jobId: job.id,
-        status: 'failed',
-        error: error.message
-      }, `user:${uploaderId}`);
-
-      throw error;
+      results.push({ violation, fine });
     }
-  }, { 
-    connection: redisConnection,
-    concurrency: 2 // Can be adjusted based on AI server capacity
-  });
 
-  worker.on('completed', (job, returnvalue) => {
-    console.log(`Job ${job.id} has completed!`);
-  });
+    // Notify frontend upon success
+    sendNotification('violation_processed', {
+      jobId: jobId,
+      status: 'completed',
+      vehicleNumber,
+      resultsCount: results.length,
+      meta
+    }, `user:${uploaderId}`);
 
-  worker.on('failed', (job, error) => {
-    console.error(`Job ${job.id} has failed with ${error.message}`);
-  });
+    return { vehicleNumber, resultsCount: results.length, meta };
+  } catch (error) {
+    console.error("Violation Job Processing Error:", error);
+    
+    // Notify frontend upon failure
+    sendNotification('violation_processed', {
+      jobId: jobId,
+      status: 'failed',
+      error: error.message
+    }, `user:${uploaderId}`);
+    
+    throw error;
+  }
+};
+
+if (redisConnection) {
+  try {
+    violationQueue = new Queue('violation-queue', {
+      connection: redisConnection
+    });
+
+    worker = new Worker('violation-queue', async (job) => {
+      return await processViolationJob(job.data, job.id);
+    }, { connection: redisConnection });
+  } catch (err) {
+    console.warn('BullMQ initialization skipped:', err.message);
+  }
 }

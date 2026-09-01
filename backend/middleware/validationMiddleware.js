@@ -29,8 +29,8 @@ const registerValidation = [
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters"),
   body("role")
-    .isIn(["Admin", "TrafficPolice", "VehicleOwner"])
-    .withMessage("Invalid role specified"),
+    .isIn(["TrafficPolice", "VehicleOwner"])
+    .withMessage("Invalid role specified. Administrator accounts cannot be created publicly."),
   body("citizenshipNumber").custom((value, { req }) => {
     if (req.body.role === "VehicleOwner" && (!value || value.trim() === "")) {
       throw new Error("Citizenship number is required for vehicle owners");

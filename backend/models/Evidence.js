@@ -36,6 +36,8 @@ const evidenceSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+evidenceSchema.index({ violationLineId: 1 });
+
 const Evidence = mongoose.model('Evidence', evidenceSchema);
 
 export default Evidence;

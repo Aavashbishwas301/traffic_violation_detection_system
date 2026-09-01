@@ -28,10 +28,10 @@ const ManageOfficers = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data } = await api.get("/api/admin/users");
+      const { data } = await api.get("/api/admin/users?role=TrafficPolice");
       setUsers(data || []);
     } catch (err) {
-      console.error("Users fetch failed");
+      console.error("Officers fetch failed:", err);
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ const ManageOfficers = () => {
     );
   }
 
-  const policeOfficers = users.filter((u) => u.role === "TrafficPolice");
+  const policeOfficers = users.filter((u) => u.role === "TrafficPolice" || !!u.badgeNumber);
 
   return (
     <Layout title="Manage Police Officers">
@@ -96,7 +96,7 @@ const ManageOfficers = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-2xl font-bold tracking-tight text-slate-900">
-              Police Officers
+              Police Officers ({policeOfficers.length})
             </h3>
             <p className="text-sm text-slate-500 mt-1">
               Add, update, or deactivate officer accounts and manage their grid access.
@@ -128,15 +128,29 @@ const ManageOfficers = () => {
               sortable: true,
               cell: (u) => (
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
-                    {u.fullName?.charAt(0) || "U"}
+                  <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center text-primary-900 font-bold text-xs uppercase shadow-sm">
+                    {u.fullName?.charAt(0) || "P"}
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">{u.fullName}</p>
+                    <p className="font-semibold text-slate-900">{u.fullName}</p>
                     <p className="text-xs text-slate-500">{u.email}</p>
                   </div>
                 </div>
               )
+            },
+            {
+              header: "Rank / Designation",
+              accessorKey: "designation",
+              sortable: true,
+              cell: (u) => {
+                const rankName = u.designationId?.rank || u.designationId?.designationName || "Officer";
+                const isHighRank = rankName.includes("DSP") || rankName.includes("Superintendent") || rankName.includes("Inspector");
+                return (
+                  <Badge variant={isHighRank ? "default" : "secondary"} className="font-medium text-xs">
+                    {rankName}
+                  </Badge>
+                );
+              }
             },
             {
               header: "Badge Number",
@@ -144,16 +158,24 @@ const ManageOfficers = () => {
               sortable: true,
               cell: (u) => (
                 <div className="flex items-center space-x-2">
-                  <ShieldAlert size={14} className="text-slate-400" />
-                  <span className="font-mono text-slate-700">{u.badgeNumber || "PENDING"}</span>
+                  <ShieldAlert size={14} className="text-primary-600" />
+                  <span className="font-mono font-medium text-slate-800 text-xs">{u.badgeNumber || "PENDING"}</span>
                 </div>
+              )
+            },
+            {
+              header: "Station / Sector",
+              accessorKey: "station",
+              sortable: true,
+              cell: (u) => (
+                <span className="text-xs text-slate-600 font-medium">{u.station || "Metropolitan Traffic Division"}</span>
               )
             },
             {
               header: "Status",
               accessorKey: "status",
               sortable: false,
-              cell: () => <Badge variant="success">ACTIVE</Badge>
+              cell: (u) => <Badge variant={u.status === "Active" || !u.status ? "success" : "warning"}>{u.status?.toUpperCase() || "ACTIVE"}</Badge>
             },
             {
               header: "Actions",

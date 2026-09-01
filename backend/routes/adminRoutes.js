@@ -65,10 +65,35 @@ router.get("/complaints", protect, admin, getComplaints);
 router.post("/complaints", protect, complaintValidation, createComplaint);
 router.put("/complaints/:id", protect, admin, respondToComplaint);
 
+import {
+  getCameraZones,
+  getCameraZoneById,
+  saveCameraZone,
+  toggleZoneStatus,
+  deleteZone,
+  deleteCamera,
+  startCameraStream,
+  stopCameraStream,
+  syncStreamHealth
+} from "../controllers/zoneController.js";
+
 // Officer Management
 router.put("/officers/:id", protect, admin, updateOfficer);
 
 // Detailed Reports
 router.get("/reports/:period", protect, admin, getDetailedReports);
+
+// Camera Calibration & Configurable Zones
+router.get("/zones", protect, police, getCameraZones);
+router.get("/zones/health/sync", protect, police, syncStreamHealth);
+router.get("/zones/:cameraId", protect, police, getCameraZoneById);
+router.post("/zones", protect, admin, saveCameraZone);
+router.patch("/zones/:cameraId/zones/:zoneId/toggle", protect, admin, toggleZoneStatus);
+router.delete("/zones/:cameraId/zones/:zoneId", protect, admin, deleteZone);
+router.delete("/zones/:cameraId", protect, admin, deleteCamera);
+
+// RTSP Live Stream Controls
+router.post("/zones/:cameraId/start-stream", protect, admin, startCameraStream);
+router.post("/zones/:cameraId/stop-stream", protect, admin, stopCameraStream);
 
 export default router;

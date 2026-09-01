@@ -22,6 +22,7 @@ import {
   Megaphone,
   Activity,
   Edit3,
+  Sliders,
   Menu,
   X
 } from 'lucide-react';
@@ -42,6 +43,7 @@ const Layout = ({ children, title }) => {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Admin'] },
     { name: 'Manage Police', icon: ShieldCheck, path: '/officers', roles: ['Admin'] },
     { name: 'Vehicle Registry', icon: Car, path: '/vehicle-mgmt', roles: ['Admin'] },
+    { name: 'Camera & Zones', icon: Sliders, path: '/camera-calibration', roles: ['Admin', 'TrafficPolice'] },
     { name: 'AI Scan', icon: Camera, path: '/detect', roles: ['TrafficPolice', 'Admin'] },
     { name: 'Manual Entry', icon: Edit3, path: '/manual-entry', roles: ['TrafficPolice', 'Admin'] },
     { name: 'Violation Management', icon: FileText, path: '/violation-mgmt', roles: ['Admin'] },

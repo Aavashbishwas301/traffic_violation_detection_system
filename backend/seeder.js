@@ -46,29 +46,125 @@ const seedData = async () => {
     });
 
     // 2. Create Designations
+    const dspDesig = await Designation.create({
+      designationCode: 'DSP-01',
+      designationName: 'Deputy Superintendent of Police',
+      rank: 'Deputy Superintendent of Police',
+      department: 'Traffic Administration & Operations',
+      hierarchyLevel: 1,
+      minimumServiceYears: 10,
+    });
+
     const inspectorDesig = await Designation.create({
       designationCode: 'INSP-01',
       designationName: 'Inspector',
       rank: 'Inspector',
-      department: 'Traffic Control',
-      hierarchyLevel: 3,
+      department: 'Traffic Enforcement & Field Operations',
+      hierarchyLevel: 2,
       minimumServiceYears: 5,
     });
 
-    // 3. Create Traffic Police
+    const siDesig = await Designation.create({
+      designationCode: 'SI-01',
+      designationName: 'Sub-Inspector',
+      rank: 'Sub-Inspector',
+      department: 'CCTV Surveillance & Digital Monitoring',
+      hierarchyLevel: 3,
+      minimumServiceYears: 3,
+    });
+
+    const asiDesig = await Designation.create({
+      designationCode: 'ASI-01',
+      designationName: 'Assistant Sub-Inspector',
+      rank: 'Assistant Sub-Inspector',
+      department: 'On-Field Patrol & Quick Response',
+      hierarchyLevel: 4,
+      minimumServiceYears: 2,
+    });
+
+    const hcDesig = await Designation.create({
+      designationCode: 'HC-01',
+      designationName: 'Head Constable',
+      rank: 'Head Constable',
+      department: 'Verification & Citation Desk',
+      hierarchyLevel: 5,
+      minimumServiceYears: 1,
+    });
+
+    // 3. Create Traffic Police Officers with Different Ranks
     const police = await TrafficPolice.create({
-      fullName: 'Officer Rabin Thapa',
+      fullName: 'Inspector Rabin Thapa',
       email: 'police@example.com',
       password: 'password123',
       phoneNumber: '9841000001',
       badgeNumber: 'TP-2024-001',
       designationId: inspectorDesig._id,
-      station: 'Metropolitan Traffic Police Division',
+      station: 'Metropolitan Traffic Police Division, Baggikhana',
       status: 'Active',
       gender: 'Male',
       dateOfBirth: new Date('1985-05-15'),
       address: 'Kathmandu, Nepal',
       joiningDate: new Date('2010-01-01'),
+    });
+
+    const policeDSP = await TrafficPolice.create({
+      fullName: 'DSP Bikram Shrestha',
+      email: 'dsp.shrestha@example.com',
+      password: 'password123',
+      phoneNumber: '9851000002',
+      badgeNumber: 'TP-2024-002',
+      designationId: dspDesig._id,
+      station: 'Central Traffic Command & Control Center',
+      status: 'Active',
+      gender: 'Male',
+      dateOfBirth: new Date('1978-11-20'),
+      address: 'Lalitpur, Nepal',
+      joiningDate: new Date('2003-04-15'),
+    });
+
+    const policeSI = await TrafficPolice.create({
+      fullName: 'SI Priya Adhikari',
+      email: 'si.priya@example.com',
+      password: 'password123',
+      phoneNumber: '9841000003',
+      badgeNumber: 'TP-2024-003',
+      designationId: siDesig._id,
+      station: 'Maitighar Traffic Control Sector',
+      status: 'Active',
+      gender: 'Female',
+      dateOfBirth: new Date('1992-03-10'),
+      address: 'Baneshwor, Kathmandu',
+      joiningDate: new Date('2016-08-01'),
+    });
+
+    const policeASI = await TrafficPolice.create({
+      fullName: 'ASI Roshan Karki',
+      email: 'asi.roshan@example.com',
+      password: 'password123',
+      phoneNumber: '9841000004',
+      badgeNumber: 'TP-2024-004',
+      designationId: asiDesig._id,
+      station: 'Koteshwor Traffic Post',
+      status: 'Active',
+      gender: 'Male',
+      dateOfBirth: new Date('1994-07-25'),
+      address: 'Bhaktapur, Nepal',
+      joiningDate: new Date('2018-12-10'),
+    });
+
+    const policeHC = await TrafficPolice.create({
+      fullName: 'HC Suresh Bista',
+      email: 'hc.bista@example.com',
+      password: 'password123',
+      phoneNumber: '9841000005',
+      badgeNumber: 'TP-2024-005',
+      designationId: hcDesig._id,
+      station: 'Kalanki Traffic Sector',
+      status: 'Active',
+      gender: 'Male',
+      dateOfBirth: new Date('1996-09-18'),
+      address: 'Kalanki, Kathmandu',
+      joiningDate: new Date('2020-02-15'),
     });
 
     // 4. Create Vehicle Owners

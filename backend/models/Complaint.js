@@ -9,7 +9,7 @@ const complaintSchema = new mongoose.Schema({
   violationId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
-    ref: 'Violation',
+    ref: 'ViolationLine',
   },
   complaintMessage: {
     type: String,

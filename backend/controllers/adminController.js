@@ -1,6 +1,7 @@
 import ViolationLine from "../models/ViolationLine.js";
 import { sendNotification } from "../socket.js";
 import Admin from "../models/Admin.js";
+import Designation from "../models/Designation.js";
 import TrafficPolice from "../models/TrafficPolice.js";
 import VehicleOwner from "../models/VehicleOwner.js";
 import Vehicle from "../models/Vehicle.js";
@@ -131,16 +132,24 @@ const getUsers = async (req, res) => {
   const { role } = req.query;
   try {
     let users = [];
-    if (role === "Admin") users = await Admin.find({}).select("-password");
-    else if (role === "TrafficPolice")
-      users = await TrafficPolice.find({}).select("-password");
-    else if (role === "VehicleOwner")
-      users = await VehicleOwner.find({}).select("-password");
-    else {
-      const admins = await Admin.find({}).select("-password");
-      const police = await TrafficPolice.find({}).select("-password");
-      const owners = await VehicleOwner.find({}).select("-password");
-      users = [...admins, ...police, ...owners];
+    if (role === "Admin") {
+      const admins = await Admin.find({}).select("-password").lean();
+      users = admins.map(u => ({ ...u, role: "Admin" }));
+    } else if (role === "TrafficPolice") {
+      const police = await TrafficPolice.find({}).populate("designationId").select("-password").lean();
+      users = police.map(u => ({ ...u, role: "TrafficPolice" }));
+    } else if (role === "VehicleOwner") {
+      const owners = await VehicleOwner.find({}).select("-password").lean();
+      users = owners.map(u => ({ ...u, role: "VehicleOwner" }));
+    } else {
+      const admins = await Admin.find({}).select("-password").lean();
+      const police = await TrafficPolice.find({}).populate("designationId").select("-password").lean();
+      const owners = await VehicleOwner.find({}).select("-password").lean();
+      users = [
+        ...admins.map(u => ({ ...u, role: "Admin" })),
+        ...police.map(u => ({ ...u, role: "TrafficPolice" })),
+        ...owners.map(u => ({ ...u, role: "VehicleOwner" })),
+      ];
     }
     res.json(users);
   } catch (error) {
@@ -365,14 +374,18 @@ const getNotifications = async (req, res) => {
 const getComplaints = async (req, res) => {
   try {
     const complaints = await Complaint.find()
-      .populate("ownerId", "fullName email")
+      .populate("ownerId", "fullName email phoneNumber")
       .populate({
         path: "violationId",
-        populate: { path: "vehicleId" },
+        populate: [
+          { path: "vehicleId", select: "vehicleNumber vehicleType brand model" },
+          { path: "violationTypeId", select: "violationName" }
+        ],
       })
       .sort({ createdAt: -1 });
     res.json(complaints);
   } catch (error) {
+    console.error("getComplaints Error:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -393,6 +406,7 @@ const respondToComplaint = async (req, res) => {
       res.status(404).json({ message: "Complaint not found" });
     }
   } catch (error) {
+    console.error("respondToComplaint Error:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -409,8 +423,16 @@ const createComplaint = async (req, res) => {
       complaintMessage,
       status: "Pending",
     });
+
+    sendNotification("new_complaint", {
+      complaintId: complaint._id,
+      ownerName: req.user.fullName || req.user.name,
+      message: complaintMessage,
+    }, "room:Admin");
+
     res.status(201).json(complaint);
   } catch (error) {
+    console.error("createComplaint Error:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };

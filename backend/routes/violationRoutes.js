@@ -7,6 +7,7 @@ import {
   updateViolation,
   deleteViolation,
   getPoliceStats,
+  getViolationEvidence
 } from '../controllers/violationController.js';
 import { protect, police } from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
@@ -20,7 +21,10 @@ router.post('/manual', protect, police, upload.single('evidence'), manualViolati
 router.get('/', protect, police, getViolations);
 router.get('/my', protect, getMyViolations);
 
-// New Police management routes
+// Evidence Retrieval and Streaming Route (Owner / Police / Admin)
+router.get('/:id/evidence', protect, getViolationEvidence);
+
+// Police management routes
 router.get('/police/stats', protect, police, getPoliceStats);
 router.put('/:id', protect, police, updateViolation);
 router.delete('/:id', protect, police, deleteViolation);

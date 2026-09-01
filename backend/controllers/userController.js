@@ -88,12 +88,16 @@ const registerUser = async (req, res) => {
     return;
   }
 
-  let user;
-  const targetRole = role || 'VehicleOwner';
+  if (role === 'Admin') {
+    return res.status(403).json({
+      message: 'System Administrator accounts cannot be created via public registration. There is only one master Administrator.'
+    });
+  }
 
-  if (targetRole === 'Admin') {
-    user = await Admin.create({ fullName, email: normalizedEmail, password, phoneNumber });
-  } else if (targetRole === 'TrafficPolice') {
+  let user;
+  const targetRole = role === 'TrafficPolice' ? 'TrafficPolice' : 'VehicleOwner';
+
+  if (targetRole === 'TrafficPolice') {
     user = await TrafficPolice.create({ fullName, email: normalizedEmail, password, phoneNumber, badgeNumber, designationId, gender, dateOfBirth, address });
   } else {
     user = await VehicleOwner.create({ fullName, email: normalizedEmail, password, phoneNumber, citizenshipNumber, address, gender, dateOfBirth });

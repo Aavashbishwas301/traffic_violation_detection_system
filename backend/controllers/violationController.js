@@ -8,7 +8,8 @@ import VehicleOwner from "../models/VehicleOwner.js";
 import Rule from "../models/Rule.js";
 import Evidence from "../models/Evidence.js";
 import Settlement from "../models/Settlement.js";
-import { violationQueue } from "../jobs/violationQueue.js";
+import { violationQueue, processViolationJob } from "../jobs/violationQueue.js";
+import storageService from "../services/storageService.js";
 
 
 // @desc    Upload evidence and detect violations
@@ -23,8 +24,7 @@ const uploadViolation = async (req, res) => {
 
   try {
     const fileUri = req.file.location || req.file.path;
-
-    const job = await violationQueue.add('detect-violation', {
+    const jobData = {
       filePath: fileUri,
       originalname: req.file.originalname,
       location,
@@ -33,16 +33,30 @@ const uploadViolation = async (req, res) => {
       remarks,
       vehicleNumber,
       uploaderId: req.user._id,
-    });
+    };
+
+    let jobId = `job-${Date.now()}`;
+    if (violationQueue) {
+      try {
+        const job = await violationQueue.add('detect-violation', jobData);
+        jobId = job.id;
+      } catch (queueErr) {
+        // Fall back to direct in-process asynchronous processing
+        processViolationJob(jobData, jobId).catch(e => console.error("Direct Processing Error:", e));
+      }
+    } else {
+      // Direct in-process asynchronous processing when Redis is offline
+      processViolationJob(jobData, jobId).catch(e => console.error("Direct Processing Error:", e));
+    }
 
     res.status(202).json({
       message: "File uploaded successfully. Processing started in the background.",
-      jobId: job.id,
+      jobId: jobId,
       status: "processing",
     });
   } catch (error) {
-    console.error("Upload Queue Error:", error);
-    res.status(500).json({ message: "Error enqueueing violation detection" });
+    console.error("Upload Error:", error);
+    res.status(500).json({ message: "Error initiating violation detection" });
   }
 };
 
@@ -141,21 +155,31 @@ const getViolations = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const results = await Promise.all(
-      violations.map(async (v) => {
-        const settlement = await Settlement.findOne({ violationLineId: v._id });
-        const evidence = await Evidence.findOne({ violationLineId: v._id });
-        return {
-          ...v._doc,
-          fine: settlement,
-          imageUrl: evidence ? evidence.imageUrl : null,
-          evidenceUrl: evidence ? evidence.imageUrl : null,
-          violationType: v.violationTypeId?.violationName,
-          ruleId: v.violationTypeId?.trafficRuleId,
-          ownerId: v.vehicleId?.ownerId
-        };
-      }),
-    );
+    const violationIds = violations.map((v) => v._id);
+
+    // Optimized batch $in queries — converts 2N queries to 2 fast indexed queries
+    const [settlements, evidences] = await Promise.all([
+      Settlement.find({ violationLineId: { $in: violationIds } }).lean(),
+      Evidence.find({ violationLineId: { $in: violationIds } }).lean(),
+    ]);
+
+    const settlementMap = new Map(settlements.map((s) => [s.violationLineId.toString(), s]));
+    const evidenceMap = new Map(evidences.map((e) => [e.violationLineId.toString(), e]));
+
+    const results = violations.map((v) => {
+      const vId = v._id.toString();
+      const settlement = settlementMap.get(vId) || null;
+      const evidence = evidenceMap.get(vId) || null;
+      return {
+        ...v._doc,
+        fine: settlement,
+        imageUrl: evidence ? evidence.imageUrl : null,
+        evidenceUrl: evidence ? evidence.imageUrl : null,
+        violationType: v.violationTypeId?.violationName,
+        ruleId: v.violationTypeId?.trafficRuleId,
+        ownerId: v.vehicleId?.ownerId,
+      };
+    });
 
     res.json({
       violations: results,
@@ -177,28 +201,38 @@ const getViolations = async (req, res) => {
 // @access  Private (VehicleOwner)
 const getMyViolations = async (req, res) => {
   try {
-    const myVehicles = await Vehicle.find({ ownerId: req.user._id });
-    const vehicleIds = myVehicles.map(v => v._id);
+    const myVehicles = await Vehicle.find({ ownerId: req.user._id }).select("_id");
+    const vehicleIds = myVehicles.map((v) => v._id);
 
     const violations = await ViolationLine.find({ vehicleId: { $in: vehicleIds } })
       .populate("vehicleId")
       .populate("violationTypeId")
       .sort({ createdAt: -1 });
 
-    const results = await Promise.all(
-      violations.map(async (v) => {
-        const settlement = await Settlement.findOne({ violationLineId: v._id });
-        const evidence = await Evidence.findOne({ violationLineId: v._id });
-        return {
-          ...v._doc,
-          fine: settlement,
-          imageUrl: evidence ? evidence.imageUrl : null,
-          evidenceUrl: evidence ? evidence.imageUrl : null,
-          violationType: v.violationTypeId?.violationName,
-          ruleId: v.violationTypeId?.trafficRuleId,
-        };
-      }),
-    );
+    const violationIds = violations.map((v) => v._id);
+
+    // Optimized batch $in queries
+    const [settlements, evidences] = await Promise.all([
+      Settlement.find({ violationLineId: { $in: violationIds } }).lean(),
+      Evidence.find({ violationLineId: { $in: violationIds } }).lean(),
+    ]);
+
+    const settlementMap = new Map(settlements.map((s) => [s.violationLineId.toString(), s]));
+    const evidenceMap = new Map(evidences.map((e) => [e.violationLineId.toString(), e]));
+
+    const results = violations.map((v) => {
+      const vId = v._id.toString();
+      const settlement = settlementMap.get(vId) || null;
+      const evidence = evidenceMap.get(vId) || null;
+      return {
+        ...v._doc,
+        fine: settlement,
+        imageUrl: evidence ? evidence.imageUrl : null,
+        evidenceUrl: evidence ? evidence.imageUrl : null,
+        violationType: v.violationTypeId?.violationName,
+        ruleId: v.violationTypeId?.trafficRuleId,
+      };
+    });
 
     res.json(results);
   } catch (error) {
@@ -328,6 +362,51 @@ const getPoliceStats = async (req, res) => {
   }
 };
 
+// @desc    Get Violation Evidence Media (Stream / Retrieval)
+// @route   GET /api/violations/:id/evidence
+// @access  Private (Owner/Police/Admin)
+const getViolationEvidence = async (req, res) => {
+  try {
+    const violation = await ViolationLine.findById(req.params.id).populate('vehicleId');
+    if (!violation) {
+      return res.status(404).json({ message: "Violation not found" });
+    }
+
+    // Role-based Access Control: Vehicle Owners can only view evidence for their registered vehicles
+    if (req.user?.role === "VehicleOwner") {
+      const ownerId = violation.vehicleId?.ownerId?.toString();
+      if (!ownerId || ownerId !== req.user._id.toString()) {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to view evidence for this vehicle" });
+      }
+    }
+
+    const evidence = await Evidence.findOne({ violationLineId: violation._id });
+    if (!evidence || (!evidence.imageUrl && !evidence.videoUrl)) {
+      return res.status(404).json({ message: "Evidence record not found for this violation" });
+    }
+
+    const targetUrl = evidence.imageUrl || evidence.videoUrl;
+
+    try {
+      const { stream, contentType, contentLength } = await storageService.getFileStream(targetUrl);
+      res.setHeader("Content-Type", contentType);
+      if (contentLength) {
+        res.setHeader("Content-Length", contentLength);
+      }
+      stream.pipe(res);
+    } catch (storageErr) {
+      if (storageErr.code === "ENOENT") {
+        return res.status(404).json({ message: "Evidence media file missing from storage repository" });
+      }
+      console.error("Storage Stream Error:", storageErr);
+      return res.status(503).json({ message: "Evidence storage repository currently unavailable", error: storageErr.message });
+    }
+  } catch (error) {
+    console.error("getViolationEvidence Error:", error);
+    res.status(500).json({ message: "Server Error retrieving evidence" });
+  }
+};
+
 export {
   uploadViolation,
   manualViolation,
@@ -336,4 +415,6 @@ export {
   updateViolation,
   deleteViolation,
   getPoliceStats,
+  getViolationEvidence
 };
+

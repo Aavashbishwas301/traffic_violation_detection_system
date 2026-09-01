@@ -109,7 +109,6 @@ const Register = () => {
                     >
                       <option value="VehicleOwner">Vehicle Owner (Citizen)</option>
                       <option value="TrafficPolice">Traffic Police Officer</option>
-                      <option value="Admin">System Administrator</option>
                     </Select>
                 </div>
 
