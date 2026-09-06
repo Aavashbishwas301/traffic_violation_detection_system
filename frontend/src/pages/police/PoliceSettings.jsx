@@ -2,13 +2,27 @@ import React from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import { User, Mail, Phone, Home, Hash, Calendar, Users, MapPin, Building, Activity, CalendarDays } from "lucide-react";
+import VerificationBanner from "../../components/VerificationBanner.jsx";
 
 const PoliceSettings = () => {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
 
   return (
     <Layout title="My Profile">
-      <div className="max-w-2xl mx-auto space-y-8 animate-fade-in pb-20">
+      <div className="max-w-2xl mx-auto space-y-6 animate-fade-in pb-20">
+        <VerificationBanner 
+          user={user} 
+          onUploadSuccess={(data) => {
+            if (user) {
+              login({
+                ...user,
+                verificationStatus: data.verificationStatus,
+                verificationDocument: data.verificationDocument,
+                verificationRemarks: data.verificationRemarks,
+              });
+            }
+          }} 
+        />
         <div className="bg-white border border-neutral-100 rounded-[40px] p-8 md:p-12 shadow-2xl space-y-8 border-l-8 border-primary-950">
           
           {/* Header */}

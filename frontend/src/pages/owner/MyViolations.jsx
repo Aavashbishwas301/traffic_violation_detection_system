@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useLanguage } from "../../context/LanguageContext.jsx";
 import Layout from "../../components/Layout.jsx";
 import api from "../../utils/axios.js";
 import { useToast } from "../../context/ToastContext.jsx";
@@ -11,6 +12,7 @@ import { Button } from "../../components/ui/Button.jsx";
 
 const MyViolations = () => {
   const { user } = useAuth();
+  const { lang, t } = useLanguage();
   const { addToast } = useToast();
   const [violations, setViolations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,7 @@ const MyViolations = () => {
 
   if (loading) {
     return (
-      <Layout title="My Violations">
+      <Layout title={t.nav_my_violations}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-12 h-12 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
         </div>
@@ -90,13 +92,17 @@ const MyViolations = () => {
   }
 
   return (
-    <Layout title="My Violations">
+    <Layout title={t.nav_my_violations}>
       <div className="space-y-6 animate-fade-in pb-20">
         <div className="flex flex-col space-y-2 border-b border-slate-200 pb-4">
           <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-            My Violations
+            {t.nav_my_violations}
           </h3>
-          <p className="text-sm text-slate-500">Track your traffic incidents and settle pending fines.</p>
+          <p className="text-sm text-slate-500">
+            {lang === 'np' 
+              ? 'आफ्ना ट्राफिक नियम उल्लङ्घनहरू हेर्नुहोस् र बाँकी जरिवानाहरू ईसेवा मार्फत तुरुन्तै फर्स्यौट गर्नुहोस्।' 
+              : 'Track your traffic incidents and settle pending fines via eSewa.'}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -111,8 +117,8 @@ const MyViolations = () => {
                         {v.vehicleId?.vehicleNumber}
                       </CardDescription>
                     </div>
-                    <Badge variant={v.status === "Paid" ? "default" : "destructive"} className={v.status === "Paid" ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200" : "bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200"}>
-                      {v.status}
+                    <Badge variant={v.status === "Paid" ? "default" : "destructive"} className={v.status === "Paid" ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 font-bold" : "bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200 font-bold"}>
+                      {v.status === "Paid" ? t.status_paid : t.status_unpaid}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -131,22 +137,28 @@ const MyViolations = () => {
 
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-0.5">Fine Amount</p>
-                      <p className="font-bold text-lg text-slate-900">NPR {v.appliedFineAmount || "0"}</p>
+                      <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-0.5">
+                        {lang === 'np' ? 'जरिवाना रकम' : 'Fine Amount'}
+                      </p>
+                      <p className="font-bold text-lg text-slate-900 font-mono">
+                        {lang === 'np' ? `रु ${(v.appliedFineAmount || 0).toLocaleString()}` : `NPR ${(v.appliedFineAmount || 0).toLocaleString()}`}
+                      </p>
                     </div>
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="text-slate-600 border-slate-200"
+                      className="text-slate-600 border-slate-200 font-bold"
                       onClick={() => viewEvidence(v.imageUrl || v.evidenceUrl)}
                     >
-                      <ImageIcon size={14} className="mr-2" /> Evidence
+                      <ImageIcon size={14} className="mr-2" /> {lang === 'np' ? 'फोटो प्रमाण' : 'Evidence'}
                     </Button>
                   </div>
 
                   {v.status !== "Paid" && (
                     <div className="pt-2">
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Settle Fine</p>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                        {lang === 'np' ? 'जरिवाना भुक्तानी' : 'Settle Fine'}
+                      </p>
                       <div className="grid grid-cols-2 gap-2">
                         <Button
                           variant="outline"

@@ -20,6 +20,8 @@ import {
   createComplaint,
   getUnregisteredVehicles,
   assignVehicleOwner,
+  getPendingVerifications,
+  verifyUserAccount,
 } from "../controllers/adminController.js";
 import { updateViolation } from "../controllers/violationController.js";
 import { protect, admin, police } from "../middleware/authMiddleware.js";
@@ -33,6 +35,10 @@ const router = express.Router();
 
 router.get("/stats", protect, police, getSystemStats);
 router.put("/violations/:id", protect, police, updateViolation);
+
+// User Document Verifications
+router.get("/verifications", protect, admin, getPendingVerifications);
+router.put("/verifications/:id", protect, admin, verifyUserAccount);
 
 // Admin-only management routes
 router.route("/users").get(protect, admin, getUsers);

@@ -9,6 +9,7 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 import { ToastProvider } from "./context/ToastContext.jsx";
 import { SocketProvider } from "./context/SocketContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { LanguageProvider } from "./context/LanguageContext.jsx";
 import { Shield } from "lucide-react";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import "./App.css";
@@ -27,6 +28,7 @@ const Notifications = lazy(() => import("./pages/shared/Notifications.jsx"));
 
 // --- Admin Pages ---
 const AdminOverview = lazy(() => import("./pages/admin/AdminOverview.jsx"));
+const UserVerifications = lazy(() => import("./pages/admin/UserVerifications.jsx"));
 const ManageOfficers = lazy(() => import("./pages/admin/ManageOfficers.jsx"));
 const VehicleRegistry = lazy(() => import("./pages/admin/VehicleRegistry.jsx"));
 const UnregisteredVehicles = lazy(() => import("./pages/admin/UnregisteredVehicles.jsx"));
@@ -91,69 +93,282 @@ const Loader = () => (
 function App() {
   return (
     <AuthProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <SocketProvider>
-            <Router>
-              <Suspense fallback={<Loader />}>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Home />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/payment-status" element={<PaymentStatus />} />
+      <LanguageProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <SocketProvider>
+              <Router>
+                <Suspense fallback={<Loader />}>
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/payment-status" element={<PaymentStatus />} />
 
-                  {/* Protected Dashboard Route (Entrypoint, will redirect based on role) */}
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    {/* Protected Dashboard Route (Entrypoint, will redirect based on role) */}
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* --- Admin Specific Routes --- */}
-                  <Route path="/admin" element={<ProtectedRoute allowedRoles={["Admin"]}><AdminOverview /></ProtectedRoute>} />
-                  <Route path="/officers" element={<ProtectedRoute allowedRoles={["Admin"]}><ManageOfficers /></ProtectedRoute>} />
-                  <Route path="/vehicle-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><VehicleRegistry /></ProtectedRoute>} />
-                  <Route path="/unregistered-vehicles" element={<ProtectedRoute allowedRoles={["Admin"]}><UnregisteredVehicles /></ProtectedRoute>} />
-                  <Route path="/violation-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><ViolationManagement /></ProtectedRoute>} />
-                  <Route path="/fines-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><FineManagement /></ProtectedRoute>} />
-                  <Route path="/financial-rules" element={<ProtectedRoute allowedRoles={["Admin"]}><TrafficRules /></ProtectedRoute>} />
-                  <Route path="/complaints-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><CitizenComplaints /></ProtectedRoute>} />
-                  <Route path="/global-reports" element={<ProtectedRoute allowedRoles={["Admin"]}><GlobalReports /></ProtectedRoute>} />
-                  <Route path="/notifications-mgmt" element={<ProtectedRoute allowedRoles={["Admin"]}><SystemNotifications /></ProtectedRoute>} />
-                  <Route path="/camera-calibration" element={<ProtectedRoute allowedRoles={["Admin", "TrafficPolice"]}><CameraCalibration /></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute allowedRoles={["Admin"]}><AdminSettings /></ProtectedRoute>} />
+                    {/* Shared Protected Routes */}
+                    <Route
+                      path="/notifications"
+                      element={
+                        <ProtectedRoute>
+                          <Notifications />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* --- Police Specific Routes --- */}
-                  <Route path="/police" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><PoliceOverview /></ProtectedRoute>} />
-                  <Route path="/detect" element={<ProtectedRoute allowedRoles={["TrafficPolice", "Admin"]}><AIScan /></ProtectedRoute>} />
-                  <Route path="/manual-entry" element={<ProtectedRoute allowedRoles={["TrafficPolice", "Admin"]}><ManualEntry /></ProtectedRoute>} />
-                  <Route path="/manage" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><VerifyDesk /></ProtectedRoute>} />
-                  <Route path="/records" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><ViolationRecords /></ProtectedRoute>} />
-                  <Route path="/search" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><VehicleSearch /></ProtectedRoute>} />
-                  <Route path="/evidence" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><EvidenceVault /></ProtectedRoute>} />
-                  <Route path="/police-settings" element={<ProtectedRoute allowedRoles={["TrafficPolice"]}><PoliceSettings /></ProtectedRoute>} />
+                    {/* Admin Protected Routes */}
+                    <Route
+                      path="/admin"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <AdminOverview />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/verifications"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <UserVerifications />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/officers"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <ManageOfficers />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/vehicle-mgmt"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <VehicleRegistry />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/unregistered-vehicles"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <UnregisteredVehicles />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/violation-mgmt"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <ViolationManagement />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/fines-mgmt"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <FineManagement />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/financial-rules"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <TrafficRules />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/complaints-mgmt"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <CitizenComplaints />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/global-reports"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <GlobalReports />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/notifications-mgmt"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <SystemNotifications />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/settings"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin"]}>
+                          <AdminSettings />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/camera-calibration"
+                      element={
+                        <ProtectedRoute allowedRoles={["Admin", "TrafficPolice"]}>
+                          <CameraCalibration />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* --- Owner Specific Routes --- */}
-                  <Route path="/owner" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><OwnerOverview /></ProtectedRoute>} />
-                  <Route path="/violations" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><MyViolations /></ProtectedRoute>} />
-                  <Route path="/gallery" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><MyPhotos /></ProtectedRoute>} />
-                  <Route path="/payments" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><PaymentHistory /></ProtectedRoute>} />
-                  <Route path="/vehicle" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><MyVehicles /></ProtectedRoute>} />
-                  <Route path="/complaints" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><SendComplaint /></ProtectedRoute>} />
-                  <Route path="/owner-settings" element={<ProtectedRoute allowedRoles={["VehicleOwner"]}><OwnerSettings /></ProtectedRoute>} />
+                    {/* Traffic Police Protected Routes */}
+                    <Route
+                      path="/police"
+                      element={
+                        <ProtectedRoute allowedRoles={["TrafficPolice"]}>
+                          <PoliceOverview />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/detect"
+                      element={
+                        <ProtectedRoute allowedRoles={["TrafficPolice", "Admin"]}>
+                          <AIScan />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/manual-entry"
+                      element={
+                        <ProtectedRoute allowedRoles={["TrafficPolice", "Admin"]}>
+                          <ManualEntry />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/manage"
+                      element={
+                        <ProtectedRoute allowedRoles={["TrafficPolice"]}>
+                          <VerifyDesk />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/records"
+                      element={
+                        <ProtectedRoute allowedRoles={["TrafficPolice"]}>
+                          <ViolationRecords />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/search"
+                      element={
+                        <ProtectedRoute allowedRoles={["TrafficPolice"]}>
+                          <VehicleSearch />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/evidence"
+                      element={
+                        <ProtectedRoute allowedRoles={["TrafficPolice"]}>
+                          <EvidenceVault />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/police-settings"
+                      element={
+                        <ProtectedRoute allowedRoles={["TrafficPolice"]}>
+                          <PoliceSettings />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* --- Shared Routes --- */}
-                  <Route path="/notifications" element={<ProtectedRoute allowedRoles={["VehicleOwner", "TrafficPolice"]}><Notifications /></ProtectedRoute>} />
+                    {/* Vehicle Owner Protected Routes */}
+                    <Route
+                      path="/owner"
+                      element={
+                        <ProtectedRoute allowedRoles={["VehicleOwner"]}>
+                          <OwnerOverview />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/violations"
+                      element={
+                        <ProtectedRoute allowedRoles={["VehicleOwner"]}>
+                          <MyViolations />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/gallery"
+                      element={
+                        <ProtectedRoute allowedRoles={["VehicleOwner"]}>
+                          <MyPhotos />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/payments"
+                      element={
+                        <ProtectedRoute allowedRoles={["VehicleOwner"]}>
+                          <PaymentHistory />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/vehicle"
+                      element={
+                        <ProtectedRoute allowedRoles={["VehicleOwner"]}>
+                          <MyVehicles />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/complaints"
+                      element={
+                        <ProtectedRoute allowedRoles={["VehicleOwner"]}>
+                          <SendComplaint />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/owner-settings"
+                      element={
+                        <ProtectedRoute allowedRoles={["VehicleOwner"]}>
+                          <OwnerSettings />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* Catch-all redirect */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-            </Router>
-          </SocketProvider>
-        </ToastProvider>
-      </ThemeProvider>
+                    {/* Catch-all redirect */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+              </Router>
+            </SocketProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

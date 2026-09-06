@@ -11,6 +11,8 @@ from PIL import Image
 import easyocr
 import re
 import gc
+import torch
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
@@ -19,7 +21,16 @@ from tracker import VehicleTrackerManager, VehicleTrack
 from zones import ZoneEvaluator
 from rtsp_stream import global_rtsp_manager, RTSPStreamManager
 
-app = FastAPI(title="TVDS AI Vision Core", version="2.5.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup phase (e.g., model warmup if needed)
+    yield
+    # Shutdown phase: stop all background RTSP stream worker threads cleanly
+    global_rtsp_manager.stop_all()
+
+
+app = FastAPI(title="TVDS AI Vision Core", version="2.5.0", lifespan=lifespan)
 security = HTTPBearer(auto_error=False)
 
 # Configurable Environment Constants
@@ -30,8 +41,9 @@ AI_CONFIDENCE_THRESHOLD_REVIEW = float(os.getenv("AI_CONFIDENCE_THRESHOLD_REVIEW
 
 # Global Model Cache
 model = YOLO('yolov8n.pt')
-# Initialize EasyOCR for English and Nepali
-reader = easyocr.Reader(['en', 'ne'], gpu=False)
+# Initialize EasyOCR for English and Nepali (dynamically uses GPU if CUDA is available, else CPU)
+use_gpu = torch.cuda.is_available()
+reader = easyocr.Reader(['en', 'ne'], gpu=use_gpu)
 
 # Camera Stream Trackers Cache
 camera_trackers: Dict[str, VehicleTrackerManager] = {}
@@ -856,12 +868,6 @@ async def detect_violations(
             raise HTTPException(status_code=400, detail="Could not decode image file")
 
         return process_image(img, frame_idx=0, camera_zones=parsed_zones)
-
-
-@app.on_event("shutdown")
-def shutdown_event():
-    """Stops all background RTSP stream worker threads cleanly."""
-    global_rtsp_manager.stop_all()
 
 
 if __name__ == "__main__":

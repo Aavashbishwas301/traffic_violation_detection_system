@@ -362,10 +362,35 @@ const broadcastMessage = async (req, res) => {
 };
 
 const getNotifications = async (req, res) => {
-  const notifications = await Notification.find()
-    .sort({ createdAt: -1 })
-    .limit(20);
-  res.json(notifications);
+  try {
+    let query = {};
+    if (req.user?.role === "TrafficPolice") {
+      query = {
+        $or: [
+          { receiverId: req.user._id },
+          { receiverType: "TrafficPolice" },
+        ],
+      };
+    } else if (req.user?.role === "VehicleOwner") {
+      query = {
+        $or: [
+          { receiverId: req.user._id },
+          { receiverType: "VehicleOwner" },
+        ],
+      };
+    } else if (req.user?.role === "Admin") {
+      // Admins can see all notifications
+      query = {};
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .limit(50);
+    res.json(notifications);
+  } catch (error) {
+    console.error("getNotifications Error:", error);
+    res.status(500).json({ message: "Failed to retrieve notifications" });
+  }
 };
 
 // @desc    Get all complaints
@@ -521,6 +546,200 @@ const generateGlobalReport = async (req, res) => {
   }
 };
 
+// @desc    Get user verification requests (TrafficPolice and VehicleOwner)
+// @route   GET /api/admin/verifications
+// @access  Private (Admin)
+const getPendingVerifications = async (req, res) => {
+  const { status, role, search } = req.query;
+  try {
+    let policeQuery = {};
+    let ownerQuery = {};
+
+    if (status && status !== "all") {
+      policeQuery.verificationStatus = status;
+      ownerQuery.verificationStatus = status;
+    }
+
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      policeQuery.$or = [
+        { fullName: searchRegex },
+        { email: searchRegex },
+        { badgeNumber: searchRegex },
+        { phoneNumber: searchRegex }
+      ];
+      ownerQuery.$or = [
+        { fullName: searchRegex },
+        { email: searchRegex },
+        { citizenshipNumber: searchRegex },
+        { phoneNumber: searchRegex }
+      ];
+    }
+
+    let policeUsers = [];
+    let ownerUsers = [];
+
+    if (!role || role === "all" || role === "TrafficPolice") {
+      const police = await TrafficPolice.find(policeQuery)
+        .populate("designationId")
+        .select("-password")
+        .sort({ updatedAt: -1 })
+        .lean();
+      policeUsers = police.map((p) => ({
+        ...p,
+        role: "TrafficPolice",
+        verificationStatus: p.verificationStatus || "Pending",
+        verificationDocument: p.verificationDocument || "",
+        rank: p.designationId?.rank || p.designationId?.designationName || "Officer",
+      }));
+    }
+
+    if (!role || role === "all" || role === "VehicleOwner") {
+      const owners = await VehicleOwner.find(ownerQuery)
+        .select("-password")
+        .sort({ updatedAt: -1 })
+        .lean();
+      ownerUsers = owners.map((o) => ({
+        ...o,
+        role: "VehicleOwner",
+        verificationStatus: o.verificationStatus || "Pending",
+        verificationDocument: o.verificationDocument || "",
+      }));
+    }
+
+    const allUsers = [...policeUsers, ...ownerUsers];
+
+    // Priority sorting: Pending with uploaded docs first, then Pending, then others
+    allUsers.sort((a, b) => {
+      const getPriority = (u) => {
+        if (u.verificationStatus === "Pending" && u.verificationDocument) return 0;
+        if (u.verificationStatus === "Pending") return 1;
+        if (u.verificationStatus === "Rejected") return 2;
+        return 3;
+      };
+      const diff = getPriority(a) - getPriority(b);
+      if (diff !== 0) return diff;
+      return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
+    });
+
+    // Compute summary stats across entire DB
+    const [pendingPolice, pendingOwners, verifiedPolice, verifiedOwners, rejectedPolice, rejectedOwners] = await Promise.all([
+      TrafficPolice.countDocuments({ verificationStatus: "Pending" }),
+      VehicleOwner.countDocuments({ verificationStatus: "Pending" }),
+      TrafficPolice.countDocuments({ verificationStatus: "Verified" }),
+      VehicleOwner.countDocuments({ verificationStatus: "Verified" }),
+      TrafficPolice.countDocuments({ verificationStatus: "Rejected" }),
+      VehicleOwner.countDocuments({ verificationStatus: "Rejected" }),
+    ]);
+
+    res.json({
+      users: allUsers,
+      summary: {
+        pendingTotal: pendingPolice + pendingOwners,
+        pendingPolice,
+        pendingOwners,
+        verifiedTotal: verifiedPolice + verifiedOwners,
+        rejectedTotal: rejectedPolice + rejectedOwners,
+      }
+    });
+  } catch (error) {
+    console.error("getPendingVerifications Error:", error);
+    res.status(500).json({ message: "Server Error: Failed to retrieve verification requests" });
+  }
+};
+
+// @desc    Approve or reject user verification
+// @route   PUT /api/admin/verifications/:id
+// @access  Private (Admin)
+const verifyUserAccount = async (req, res) => {
+  const { id } = req.params;
+  const { role, action, remarks } = req.body;
+
+  if (!role || !action || !["approve", "reject"].includes(action)) {
+    return res.status(400).json({ message: "Role and valid action ('approve' or 'reject') are required." });
+  }
+
+  try {
+    let user;
+    if (role === "TrafficPolice") {
+      user = await TrafficPolice.findById(id);
+    } else if (role === "VehicleOwner") {
+      user = await VehicleOwner.findById(id);
+    } else {
+      return res.status(400).json({ message: "Invalid role specified." });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User account not found." });
+    }
+
+    const isApprove = action === "approve";
+
+    if (isApprove) {
+      user.verificationStatus = "Verified";
+      user.status = "Active";
+      user.verifiedAt = new Date();
+      user.verifiedBy = req.user._id;
+      user.verificationRemarks = remarks || "Account officially verified by Admin.";
+    } else {
+      user.verificationStatus = "Rejected";
+      user.verificationRemarks = remarks || "कागजात अस्पष्ट वा अमान्य भएकोले अस्वीकृत गरिएको छ। कृपया पुनः अपलोड गर्नुहोस्। (Document rejected. Please re-upload a clear copy.)";
+    }
+
+    await user.save();
+
+    // Dispatch in-app notification to the target user
+    try {
+      const notifTitle = isApprove 
+        ? "खाता प्रमाणीकरण स्वीकृत (Account Verified)" 
+        : "कागजात प्रमाणीकरण अस्वीकृत (Verification Rejected)";
+      const notifMsg = isApprove
+        ? `तपाईँको कागजात प्रशासकबाट प्रमाणीकरण भएको छ। TVDS प्रणालीका सम्पूर्ण सेवाहरू सक्रिय भएका छन्।`
+        : `तपाईँको कागजात अस्वीकृत गरिएको छ: ${user.verificationRemarks}`;
+
+      await Notification.create({
+        receiverId: user._id,
+        receiverType: role,
+        title: notifTitle,
+        message: notifMsg,
+        type: isApprove ? "verification" : "verification_rejected",
+        link: "/dashboard",
+        meta: {
+          action,
+          remarks: user.verificationRemarks,
+          verifiedAt: user.verifiedAt,
+        }
+      });
+
+      sendNotification("verification_status_update", {
+        userId: user._id,
+        status: user.verificationStatus,
+        remarks: user.verificationRemarks,
+        title: notifTitle,
+        message: notifMsg,
+      }, `user:${user._id}`);
+    } catch (notifErr) {
+      console.warn("Failed to dispatch user verification notification:", notifErr.message);
+    }
+
+    res.json({
+      message: isApprove ? "User account verified successfully." : "User verification rejected.",
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role,
+        verificationStatus: user.verificationStatus,
+        verificationRemarks: user.verificationRemarks,
+        verifiedAt: user.verifiedAt,
+      }
+    });
+  } catch (error) {
+    console.error("verifyUserAccount Error:", error);
+    res.status(500).json({ message: "Server Error: Failed to process verification." });
+  }
+};
+
 export {
   getSystemStats,
   getUsers,
@@ -542,4 +761,6 @@ export {
   createComplaint,
   getUnregisteredVehicles,
   assignVehicleOwner,
+  getPendingVerifications,
+  verifyUserAccount,
 };

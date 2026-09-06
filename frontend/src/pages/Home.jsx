@@ -5,29 +5,23 @@ import {
   MapPin, Mail, Phone, Menu, X, ArrowRight, FileText,
   Search, CheckCircle2, Cpu, AlertTriangle,
   ChevronRight, Lock, HelpCircle, ExternalLink, Activity,
-  CreditCard, FileCheck, Info, Scale, Bell, Clock, Building2, Eye, Globe
+  CreditCard, FileCheck, Info, Scale, Bell, Clock, Building2, Eye, Globe,
+  BookOpen, SlidersHorizontal
 } from 'lucide-react';
 import policeLogo from '../assets/police_logo.jpg';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 const Home = () => {
-  const [lang, setLang] = useState(() => {
-    const saved = localStorage.getItem('tvds_app_lang');
-    return saved === 'en' || saved === 'np' ? saved : 'np';
-  });
-
-  const handleSetLang = (newLang) => {
-    setLang(newLang);
-    try {
-      localStorage.setItem('tvds_app_lang', newLang);
-    } catch (err) {
-      console.warn('Could not save language preference:', err);
-    }
-  };
+  const { lang, setLang: handleSetLang } = useLanguage();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTab, setSearchTab] = useState('plate');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState('');
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
+  const [selectedRuleCitation, setSelectedRuleCitation] = useState(null);
+  const [catalogFilter, setCatalogFilter] = useState('ALL');
+  const [catalogSearch, setCatalogSearch] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -157,17 +151,32 @@ const Home = () => {
     srv4_desc: lang === 'np' ? 'जरिवाना फर्स्यौट पश्चात नेपाल सरकारको आधिकारिक डिजिटल चलान रसिद तुरुन्त डाउनलोड गर्नुहोस्।' : 'Instantly download official Government of Nepal payment confirmation receipts.',
     srv4_btn: lang === 'np' ? 'रसिद हेर्नुहोस्' : 'Download Receipt',
 
-    // Rules
+    // Rules & Awareness
     rules_ref: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ बमोजिम' : 'Pursuant to Motor Vehicles & Transport Management Act, 2049',
     rules_heading: lang === 'np' ? 'प्रमुख ट्राफिक नियम उल्लङ्घन तथा जरिवाना अनुसूची' : 'Official Traffic Rules & Fine Schedule',
-    rules_view_all: lang === 'np' ? 'सम्पूर्ण कानुनी अनुसूची हेर्नुहोस्' : 'View Full Legal Catalog',
+    rules_view_all: lang === 'np' ? 'सम्पूर्ण कानुनी अनुसूची (Legal Catalog)' : 'View Full Legal Catalog',
     col_code: lang === 'np' ? 'नियम सङ्केत' : 'Rule Code',
     col_violation: lang === 'np' ? 'उल्लङ्घनको विवरण' : 'Violation Category',
     col_section: lang === 'np' ? 'कानुनी दफा' : 'Legal Section',
     col_fine: lang === 'np' ? 'जरिवाना रकम' : 'Fine Amount',
     col_demerit: lang === 'np' ? 'नकारात्मक अङ्क' : 'Demerit Points',
-    col_action: lang === 'np' ? 'कार्य' : 'Action',
-    action_check: lang === 'np' ? 'चलान जाँच →' : 'Check Citation →',
+    col_action: lang === 'np' ? 'सचेतना तथा व्याख्या' : 'Citation & Awareness',
+    action_check: lang === 'np' ? 'सचेतना तथा व्याख्या 👁️' : 'Citation & Awareness 👁️',
+    modal_catalog_title: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ — कानुनी अनुसूची तथा जरिवाना दर' : 'Motor Vehicles & Transport Management Act, 2049 — Official Legal Catalog',
+    modal_catalog_sub: lang === 'np' ? 'नेपाल ट्राफिक प्रहरी तथा यातायात व्यवस्था विभागद्वारा लागू कानुनी दफा तथा जरिवाना अनुसूची' : 'Statutory Sections, Fine Schedules & Awareness Directives by Nepal Traffic Police & DoTM',
+    filter_all: lang === 'np' ? 'सबै नियमहरू' : 'All Rules',
+    filter_signals: lang === 'np' ? 'बत्ती / संकेत' : 'Signals',
+    filter_safety: lang === 'np' ? 'व्यक्तिगत सुरक्षा' : 'Safety',
+    filter_lane: lang === 'np' ? 'लेन अनुशासन' : 'Lane Discipline',
+    filter_speed: lang === 'np' ? 'गति नियन्त्रण' : 'Speed Limit',
+    filter_parking: lang === 'np' ? 'पार्किङ / कागजात' : 'Parking & Docs',
+    search_rule_placeholder: lang === 'np' ? 'नियम सङ्केत, उल्लङ्घन वा कानुनी दफा खोज्नुहोस्...' : 'Search by code, violation type, or legal section...',
+    statutory_law: lang === 'np' ? 'सम्बन्धित कानुनी आधार (Statutory Legal Section):' : 'Statutory Legal Provision:',
+    ai_surveillance: lang === 'np' ? 'स्वचालित AI क्यामेरा पहिचान विधि (AI Detection Protocol):' : 'Automated AI Camera Detection Protocol:',
+    public_awareness: lang === 'np' ? 'सडक सुरक्षा तथा नागरिक सचेतना सन्देश:' : 'Road Safety Rationale & Public Awareness:',
+    driver_dos: lang === 'np' ? 'सवारी चालकले अपनाउनुपर्ने सतर्कता (Do\'s & Don\'ts):' : 'Driver Compliance Guidelines (Do\'s & Don\'ts):',
+    close_modal: lang === 'np' ? 'बन्द गर्नुहोस्' : 'Close',
+    check_my_vehicle: lang === 'np' ? 'आफ्नो सवारीको ई-चलान जाँच्नुहोस्' : 'Check Citations for My Vehicle',
 
     // Notices
     notices_heading: lang === 'np' ? 'सूचना तथा प्रेस विज्ञप्तिहरू' : 'Official Notices & Press Bulletins',
@@ -205,44 +214,172 @@ const Home = () => {
   const trafficRules = [
     { 
       code: 'TR-01', 
-      title: lang === 'np' ? 'ट्राफिक बत्ती उल्लङ्घन' : 'Traffic Light Red Signal Violation', 
-      desc: lang === 'np' ? 'रातो बत्ती बलेको अवस्थामा चोक पार गरेको' : 'Crossing intersection during red signal phase',
+      category: 'SIGNALS',
+      category_label: lang === 'np' ? 'ट्राफिक बत्ती' : 'Traffic Signals',
+      title: lang === 'np' ? 'ट्राफिक बत्ती उल्लङ्घन (रातो बत्ती)' : 'Traffic Light Red Signal Violation', 
+      desc: lang === 'np' ? 'रातो बत्ती बलेको अवस्थामा रोकिने रेखा (Stop Line) पार गरी चोक पार गरेको' : 'Crossing stop line during red signal phase without traffic clearance',
       fine: lang === 'np' ? 'रु १,५००' : 'NPR 1,500', 
-      section: lang === 'np' ? 'दफा १६४ (१)' : 'Section 164 (1)', 
-      demerit: lang === 'np' ? '२ अङ्क' : '2 Demerits' 
+      section: lang === 'np' ? 'दफा १६४ उपदफा (१)' : 'Section 164 (1)', 
+      fullSection: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ को दफा १६४ उपदफा (१) बमोजिम ट्राफिक बत्ती तथा संकेत उल्लंघन।' : 'Motor Vehicles and Transport Management Act, 2049 — Section 164 (1): Disobedience of Traffic Lights and Road Signals.',
+      demerit: lang === 'np' ? '२ अङ्क' : '2 Demerits',
+      severity: 'HIGH',
+      aiDetection: lang === 'np' 
+        ? 'स्वचालित क्यामेराले बत्ती रातो भएको ०.५ सेकेन्ड पछि स्टप-लाइन पार गर्ने सवारीको गति तथा नम्बर प्लेट स्वतः ३-फ्रेम फोटो प्रमाणसहित सुरक्षित गर्दछ।'
+        : 'Smart cameras monitor the virtual stop-line zone. Any vehicle crossing the trigger polygon after 0.5s into the red signal cycle is automatically recorded with high-resolution 3-frame evidentiary snapshots.',
+      awareness: lang === 'np'
+        ? 'काठमाडौँ उपत्यका तथा प्रमुख सडक दुर्घटनाहरूको ३५% भन्दा बढी दुर्घटना रातो बत्ती उल्लङ्घनका कारण हुने गर्दछ। एक छिनको हतारले तपाईं र अन्य बटुवाको जीवन जोखिममा पार्न सक्छ।'
+        : 'Over 35% of severe urban junction collisions in Nepal stem from running red lights. Impatience of a few seconds endangers both motorists and pedestrian lives.',
+      guidelines: lang === 'np' 
+        ? ['पहेँलो बत्ती बल्दा गति नबढाउनुहोस् र सुरक्षित रूपमा रोकिने तयारी गर्नुहोस्।', 'सेतो स्टप लाइन भन्दा अगाडि नै सवारी साधन पूर्ण रूपमा रोक्नुहोस्।', 'एम्बुलेन्स तथा दमकल जस्ता आपतकालीन सवारीलाई सधैँ पहिलो प्राथमिकता दिनुहोस्।']
+        : ['Do not accelerate on amber; decelerate and prepare to stop safely.', 'Always stop completely before the solid white pavement stop-line.', 'Yield right-of-way immediately to emergency response vehicles.']
     },
     { 
       code: 'TR-02', 
-      title: lang === 'np' ? 'हेल्मेट / सुरक्षा पेटी प्रयोग नगरेको' : 'Helmet & Seatbelt Non-Compliance', 
-      desc: lang === 'np' ? 'सवारी चालक वा पछाडि बस्नेले हेल्मेट नलगाएको' : 'Rider or pillion passenger without certified helmet',
+      category: 'SAFETY',
+      category_label: lang === 'np' ? 'व्यक्तिगत सुरक्षा' : 'Personal Safety',
+      title: lang === 'np' ? 'हेल्मेट / सुरक्षा पेटी (Seatbelt) प्रयोग नगरेको' : 'Helmet & Seatbelt Non-Compliance', 
+      desc: lang === 'np' ? 'मोटरसाइकल चालक वा पछाडि बस्नेले गुणस्तरीय हेल्मेट नलगाएको वा चारपाङ्ग्रेमा सिटबेल्ट नबाँधेको' : 'Rider or pillion without certified helmet, or four-wheeler occupant without seatbelt',
       fine: lang === 'np' ? 'रु १,०००' : 'NPR 1,000', 
-      section: lang === 'np' ? 'दफा १६४ (२)' : 'Section 164 (2)', 
-      demerit: lang === 'np' ? '१ अङ्क' : '1 Demerit' 
+      section: lang === 'np' ? 'दफा १६४ उपदफा (२)' : 'Section 164 (2)', 
+      fullSection: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ को दफा १६४ उपदफा (२) बमोजिम सुरक्षा उपकरण (हेल्मेट तथा सिटबेल्ट) अनिवार्य प्रयोग नगरेको।' : 'Motor Vehicles and Transport Management Act, 2049 — Section 164 (2): Mandatory Protective Gear (Helmet & Seatbelt) Non-compliance.',
+      demerit: lang === 'np' ? '१ अङ्क' : '1 Demerit',
+      severity: 'MEDIUM',
+      aiDetection: lang === 'np'
+        ? 'AI दृष्टि मोडेलले दुईपाङ्ग्रे सवारी चालक तथा पछाडि बस्ने यात्रुको शिरमा हेल्मेट र चारपाङ्ग्रेमा चालकको सिटबेल्ट स्ट्रेप वास्तविक समयमा पहिचान गर्दछ।'
+        : 'Deep learning classification models inspect vehicle operator headgear and cockpit seatbelt strap orientation in real time.',
+      awareness: lang === 'np'
+        ? 'प्रमाणित हेल्मेटले टाउकोमा लाग्ने गम्भीर चोटको जोखिम ७०% र मृत्युको जोखिम ४०% सम्म घटाउँछ। सिटबेल्टले दुर्घटनाको बेला अगाडि फालिनबाट जोगाउँछ।'
+        : 'Wearing standard safety helmets reduces traumatic brain injury risk by 70% and fatality rates by over 40% in two-wheeler crashes. Seatbelts prevent ejection.',
+      guidelines: lang === 'np'
+        ? ['सधैँ ISI वा नेपाल गुणस्तर चिन्ह प्राप्त सुरक्षित हेल्मेटको फिता (Strap) कसेर लगाउनुहोस्।', 'पछाडि बस्ने यात्रुलाई पनि अनिवार्य हेल्मेट प्रयोग गर्न लगाउनुहोस्।', 'कार चलाउनु अघि चालक र अगाडि बस्ने यात्रुले सिटबेल्ट अनिवार्य बाँध्नुहोस्।']
+        : ['Fasten the chin strap securely on certified safety helmets at all times.', 'Ensure pillion riders also wear certified head protection.', 'Buckle three-point seatbelts before putting the vehicle into gear.']
     },
     { 
       code: 'TR-03', 
+      category: 'PEDESTRIAN',
+      category_label: lang === 'np' ? 'पैदलयात्री प्राथमिकता' : 'Pedestrian Priority',
       title: lang === 'np' ? 'जेब्रा क्रसिङ तथा पैदलयात्री अवरोध' : 'Zebra Crossing & Pedestrian Obstruction', 
-      desc: lang === 'np' ? 'पैदलयात्री पार गर्ने स्थानमा सवारी रोकेको' : 'Encroaching pedestrian crossing zone during walk signal',
+      desc: lang === 'np' ? 'पैदलयात्री पार गर्ने जेब्रा क्रसिङ क्षेत्रमा सवारी साधन रोकेर वा तीव्र गतिले अवरोध पुर्‍याएको' : 'Encroaching pedestrian crossing zone during walk signal or obstructing pedestrians',
       fine: lang === 'np' ? 'रु १,०००' : 'NPR 1,000', 
-      section: lang === 'np' ? 'दफा १६४ (३)' : 'Section 164 (3)', 
-      demerit: lang === 'np' ? '१ अङ्क' : '1 Demerit' 
+      section: lang === 'np' ? 'दफा १६४ उपदफा (३)' : 'Section 164 (3)', 
+      fullSection: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ को दफा १६४ उपदफा (३) बमोजिम पैदलयात्रीको अधिकार क्षेत्र अवरोध गरेको।' : 'Motor Vehicles and Transport Management Act, 2049 — Section 164 (3): Obstruction of Pedestrian Right-of-Way and Zebra Zones.',
+      demerit: lang === 'np' ? '१ अङ्क' : '1 Demerit',
+      severity: 'MEDIUM',
+      aiDetection: lang === 'np'
+        ? 'जेब्रा क्रसिङको क्यालिब्रेसन जोनमा पैदलयात्री पार गरिरहेको बेला सवारी साधनले क्रसिङ ओगटेमा क्यामेराले स्वचालित रूपमा चलान उत्पन्न गर्छ।'
+        : 'Zone intersection algorithms detect when a vehicle encroaches the pedestrian zebra polygon while pedestrian bounding boxes are active.',
+      awareness: lang === 'np'
+        ? 'सडकमा पहिलो अधिकार पैदलयात्रीको हो। जेब्रा क्रसिङमा पैदलयात्रीलाई बाटो दिनु सभ्य नागरिक र सुरक्षित सडक संस्कृतिको आधार हो।'
+        : 'Pedestrians maintain primary right of way on marked zebra paths. Courteous yielding creates safer, civilized cities.',
+      guidelines: lang === 'np'
+        ? ['जेब्रा क्रसिङ नजिक पुग्दा सधैँ सवारीको गति धीमा गर्नुहोस्।', 'क्रसिङमा पैदलयात्री देखिनासाथ सवारी रोकेर बाटो दिनुहोस्।', 'ट्राफिक जामको बेला जेब्रा क्रसिङमाथि सवारी साधन नरोक्नुहोस्।']
+        : ['Slow down well ahead of any marked zebra crossing.', 'Come to a complete stop when pedestrians begin crossing.', 'Never obstruct zebra markings during queued traffic jams.']
     },
     { 
       code: 'TR-04', 
-      title: lang === 'np' ? 'गलत लेन / एकतर्फी मार्ग उल्लङ्घन' : 'Lane Discipline & One-Way Violation', 
-      desc: lang === 'np' ? 'विपरीत दिशा वा ठोस रेखा पार गरी सवारी चलाएको' : 'Driving against flow or crossing continuous solid line',
+      category: 'LANE',
+      category_label: lang === 'np' ? 'लेन अनुशासन' : 'Lane Discipline',
+      title: lang === 'np' ? 'गलत लेन / एकतर्फी (One-Way) मार्ग उल्लङ्घन' : 'Lane Discipline & One-Way Violation', 
+      desc: lang === 'np' ? 'तोकिएको लेन अनुशासन नमानेको, ठोस सेतो रेखा नाघेको वा विपरीत दिशाबाट चलाएको' : 'Disobeying marked road lanes, straddling solid lines, or driving contra-flow',
       fine: lang === 'np' ? 'रु १,५००' : 'NPR 1,500', 
-      section: lang === 'np' ? 'दफा १६४ (४)' : 'Section 164 (4)', 
-      demerit: lang === 'np' ? '२ अङ्क' : '2 Demerits' 
+      section: lang === 'np' ? 'दफा १६४ उपदफा (४)' : 'Section 164 (4)', 
+      fullSection: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ को दफा १६४ उपदफा (४) बमोजिम लेन अनुशासन तथा सडक रेखांकनको उल्लङ्घन।' : 'Motor Vehicles and Transport Management Act, 2049 — Section 164 (4): Violation of Lane Discipline, Solid Markings and One-Way Flow.',
+      demerit: lang === 'np' ? '२ अङ्क' : '2 Demerits',
+      severity: 'HIGH',
+      aiDetection: lang === 'np'
+        ? 'सडकमा कोरिएको डिभाइडर तथा ठोस रेखामा सवारीको ट्र्याक भेक्टर विपरीत दिशा वा रेखामाथि गएमा क्यामेराले अभिलेख राख्दछ।'
+        : 'Optical flow and trajectory trackers flag continuous solid-line breaches and negative vector flow on dedicated one-way corridors.',
+      awareness: lang === 'np'
+        ? 'लेन अनुशासनको अभाव नै उपत्यकाको मुख्य ट्राफिक जाम तथा अगाडिबाट हुने भीषण ठक्करको प्रमुख कारण हो।'
+        : 'Improper overtaking and reckless lane weaving account for major head-on collisions and gridlocks on urban highways.',
+      guidelines: lang === 'np'
+        ? ['आफ्नो लेनमा मात्र सवारी चलाउनुहोस् र अनावश्यक ओभरटेक नगर्नुहोस्।', 'दायाँ वा बायाँ मोडिनु अघि अनिवार्य रूपमा साइड लाइट (Indicator) दिनुहोस्।', 'एकतर्फी सडकमा कहिल्यै पनि विपरीत दिशाबाट सवारी नचलाउनुहोस्।']
+        : ['Maintain designated lane; do not straddle dividing lane boundaries.', 'Engage turn indicators at least 30 meters prior to maneuvers.', 'Strictly avoid entering restricted contra-flow one-way thoroughfares.']
     },
     { 
       code: 'TR-05', 
-      title: lang === 'np' ? 'तीव्र गतिमा सवारी चलाएको' : 'Over-Speeding in Urban Corridors', 
-      desc: lang === 'np' ? 'तोकिएको गति सीमा भन्दा बढी गतिमा चलाएको' : 'Exceeding designated urban zone speed limit by > 15 km/h',
+      category: 'SPEED',
+      category_label: lang === 'np' ? 'गति नियन्त्रण' : 'Speed Limit',
+      title: lang === 'np' ? 'तीव्र गतिमा सवारी चलाएको (Over-Speeding)' : 'Over-Speeding in Urban Corridors', 
+      desc: lang === 'np' ? 'सडक खण्डमा तोकिएको गति सीमा (उदा. ४०/५० कि.मि./घन्टा) भन्दा बढी गतिमा चलाएको' : 'Operating above designated statutory urban road speed limits',
       fine: lang === 'np' ? 'रु २,०००' : 'NPR 2,000', 
-      section: lang === 'np' ? 'दफा १६४ (५)' : 'Section 164 (5)', 
-      demerit: lang === 'np' ? '३ अङ्क' : '3 Demerits' 
+      section: lang === 'np' ? 'दफा १६४ उपदफा (५)' : 'Section 164 (5)', 
+      fullSection: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ को दफा १६४ उपदफा (५) बमोजिम तोकिएको गति सीमा भन्दा तीव्र गतिमा सवारी सञ्चालन।' : 'Motor Vehicles and Transport Management Act, 2049 — Section 164 (5): Exceeding Posted Road Speed Limits.',
+      demerit: lang === 'np' ? '३ अङ्क' : '3 Demerits',
+      severity: 'CRITICAL',
+      aiDetection: lang === 'np'
+        ? 'क्यामेराको निश्चित दूरी (Benchmark Calibration) पार गर्न लागेको समय (Time-over-Distance) को आधारमा सवारी गति मापन गरिन्छ।'
+        : 'Calibrated distance-over-time video benchmarks measure instantaneous vehicle velocity across calibrated road markers.',
+      awareness: lang === 'np'
+        ? 'तीव्र गति सबैभन्दा घातक हुन्छ। गति जति बढ्छ, आपतकालीन ब्रेक लगाउने दूरी त्यति नै बढ्छ र दुर्घटनामा ज्यान जाने जोखिम अत्यधिक हुन्छ।'
+        : 'Excess speed drastically magnifies vehicle stopping distance and crash impact force, directly causing fatal outcomes.',
+      guidelines: lang === 'np'
+        ? ['सहरी सडकमा तोकिएको गति सीमा (सामान्यतया ४०-५० किमी/घण्टा) भित्रै सवारी चलाउनुहोस्।', 'विद्यालय, अस्पताल तथा बाक्लो बस्ती क्षेत्रमा गति २० किमी/घण्टा भन्दा कम राख्नुहोस्।', 'वर्षातको समयमा सडक चिप्लो हुने हुँदा गति थप नियन्त्रण गर्नुहोस्।']
+        : ['Abide by posted speed limits (standard 40–50 km/h in metro corridors).', 'Drop speed below 20 km/h in school, hospital, and residential zones.', 'Account for adverse weather and reduced tire traction during monsoons.']
     },
+    { 
+      code: 'TR-06', 
+      category: 'SAFETY',
+      category_label: lang === 'np' ? 'व्यक्तिगत सुरक्षा' : 'Personal Safety',
+      title: lang === 'np' ? 'सवारी चलाउँदा मोबाइल फोन प्रयोग गरेको' : 'Mobile Phone Usage While Driving', 
+      desc: lang === 'np' ? 'सवारी चलाइरहेको अवस्थामा हातमा मोबाइल फोन समातेको वा कुराकानी गरेको' : 'Holding or operating handheld mobile phones or messaging while driving',
+      fine: lang === 'np' ? 'रु १,०००' : 'NPR 1,000', 
+      section: lang === 'np' ? 'दफा १६४ उपदफा (६)' : 'Section 164 (6)', 
+      fullSection: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ को दफा १६४ उपदफा (६) बमोजिम सवारी सञ्चालनका बखत हातमा मोबाइल फोन प्रयोग।' : 'Motor Vehicles and Transport Management Act, 2049 — Section 164 (6): Use of Handheld Communication Devices During Operation.',
+      demerit: lang === 'np' ? '१ अङ्क' : '1 Demerit',
+      severity: 'HIGH',
+      aiDetection: lang === 'np'
+        ? 'हाई-डेफिनिसन क्यामेराले सवारी चालकको हातको स्थिति तथा मोबाइल फोन प्रयोगको कोणलाई पहिचान गर्दछ।'
+        : 'High-definition cockpit surveillance identifies driver distraction posture and handheld device usage patterns.',
+      awareness: lang === 'np'
+        ? 'मोबाइल फोन प्रयोग गर्दा चालकको ध्यान सडकबाट कम्तीमा ५ सेकेन्डसम्म हट्छ, जसले दुर्घटनाको जोखिम ४ गुणा बढाउँछ।'
+        : 'Texting or calling diverts visual attention for an average of 4-5 critical seconds, escalating crash probability by 400%.',
+      guidelines: lang === 'np'
+        ? ['सवारी चलाउँदा कहिल्यै पनि फोनमा कुरा वा म्यासेज नगर्नुहोस्।', 'अति जरुरी कल भएमा सवारी साधनलाई सुरक्षित छेउमा रोकेर मात्र कुरा गर्नुहोस्।', 'सवारी साधनमा ब्लुटुथ वा हेन्ड-फ्री उपकरणको पनि अनावश्यक प्रयोगबाट बच्नुहोस्।']
+        : ['Never text, browse, or hold a phone to your ear while maneuvering.', 'Pull safely off the road into a parking bay before answering critical calls.', 'Minimize any hands-free conversation that causes cognitive distraction.']
+    },
+    { 
+      code: 'TR-07', 
+      category: 'PARKING',
+      category_label: lang === 'np' ? 'पार्किङ तथा बाधा' : 'Parking & Flow',
+      title: lang === 'np' ? 'निषेधित क्षेत्रमा पार्किङ / सडक अवरोध' : 'Unauthorized Parking & Road Obstruction', 
+      desc: lang === 'np' ? 'नो-पार्किङ क्षेत्र, मुख्य सडक वा फुटपाथमा सवारी साधन छाडेर ट्राफिक आवागमनमा बाधा पुर्‍याएको' : 'Stationing vehicle in no-parking zones or blocking active traffic thoroughfares',
+      fine: lang === 'np' ? 'रु १,०००' : 'NPR 1,000', 
+      section: lang === 'np' ? 'दफा १६४ उपदफा (७)' : 'Section 164 (7)', 
+      fullSection: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ को दफा १६४ उपदफा (७) बमोजिम निषेधित स्थानमा पार्किङ तथा आवागमन अवरोध।' : 'Motor Vehicles and Transport Management Act, 2049 — Section 164 (7): Parking in Restricted Areas and Causing Road Bottlenecks.',
+      demerit: lang === 'np' ? '१ अङ्क' : '1 Demerit',
+      severity: 'LOW',
+      aiDetection: lang === 'np'
+        ? 'सडक क्षेत्रमा तोकिएको समयभन्दा बढी समय स्थिर रहेका अनधिकृत सवारी साधनलाई क्यामेराले फ्ल्याग गर्दछ।'
+        : 'Static object detection monitors designated yellow curb corridors and logs vehicle stationary duration.',
+      awareness: lang === 'np'
+        ? 'अव्यवस्थित पार्किङले सडक साँघुरो बनाई एम्बुलेन्स तथा सार्वजनिक यातायात सञ्चालनमा ठूलो अवरोध सिर्जना गर्छ।'
+        : 'Illegal curb parking reduces road carrying capacity by half and blocks fire tenders and ambulances.',
+      guidelines: lang === 'np'
+        ? ['सधैँ तोकिएको आधिकारिक पार्किङ स्थलमा मात्र सवारी पार्क गर्नुहोस्।', 'नो-पार्किङ बोर्ड वा पहेँलो रङ लगाइएको सडक छेउमा कहिल्यै नरोक्नुहोस्।', 'फुटपाथ पैदलयात्रीको लागि हो, त्यसमा सवारी नचढाउनुहोस्।']
+        : ['Always utilize designated municipal or private off-street parking facilities.', 'Never park beside yellow curb paint or beneath No-Parking signs.', 'Keep sidewalks and pedestrian pathways completely unobstructed.']
+    },
+    { 
+      code: 'TR-08', 
+      category: 'DOCS',
+      category_label: lang === 'np' ? 'सवारी कागजात' : 'Documentation',
+      title: lang === 'np' ? 'अस्पष्ट वा छोपिएको नम्बर प्लेट' : 'Obstructed or Non-Standard Number Plate', 
+      desc: lang === 'np' ? 'नम्बर प्लेट मेटिएको, फोहोरले छोपिएको, बङ्ग्याइएको वा तोकिएको ढाँचा विपरित राखेको' : 'Displaying broken, defaced, obscured, or non-compliant vehicle registration plates',
+      fine: lang === 'np' ? 'रु १,५००' : 'NPR 1,500', 
+      section: lang === 'np' ? 'दफा १६४ उपदफा (८)' : 'Section 164 (8)', 
+      fullSection: lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ को दफा १६४ उपदफा (८) बमोजिम नम्बर प्लेट स्पष्ट नराखेको वा ढाँचा बिगारेको।' : 'Motor Vehicles and Transport Management Act, 2049 — Section 164 (8): Non-standard, Obscured, or Defaced Registration Plate.',
+      demerit: lang === 'np' ? '२ अङ्क' : '2 Demerits',
+      severity: 'HIGH',
+      aiDetection: lang === 'np'
+        ? 'ANPR क्यामेराले सवारीको प्लेट क्यारेक्टर पढ्न नसकेको वा प्लेट विकृत देखिएमा म्यानुअल अनुसन्धानमा पठाउँछ।'
+        : 'ANPR confidence estimators flag low OCR readability, bent plates, or obscured fonts for secondary police audit.',
+      awareness: lang === 'np'
+        ? 'स्पष्ट नम्बर प्लेट सवारी साधनको कानुनी पहिचान हो। दुर्घटना वा अपराध अनुसन्धानमा नम्बर प्लेट नै पहिलो कडी हो।'
+        : 'A clear registration plate is the vehicle’s primary legal identity, critical for accident investigations and hit-and-run tracking.',
+      guidelines: lang === 'np'
+        ? ['नम्बर प्लेट सधैँ सफा र स्पष्ट रूपमा पढ्न सकिने अवस्थामा राख्नुहोस्।', 'प्लेटमा कुनै प्रकारको सजावटी स्टिकर, रङ वा जाली नलगाउनुहोस्।', 'यातायात व्यवस्था विभागद्वारा तोकिएको आधिकारिक मानक ढाँचा प्रयोग गर्नुहोस्।']
+        : ['Keep both front and rear plates clean of mud, dust, and grime.', 'Avoid decorative fonts, tint films, or illegal metallic frames.', 'Ensure adherence to official Department of Transport Management standards.']
+    }
   ];
 
   const notices = [
@@ -475,13 +612,13 @@ const Home = () => {
       {/* ========================================================================= */}
       {/* 4. BREAKING NOTICE TICKER (सार्वजनिक सूचना पट्टी) */}
       {/* ========================================================================= */}
-      <div className="bg-amber-50 border-b border-amber-200 text-xs py-2 px-4 sm:px-8">
+      <div className="bg-amber-50/90 border-b border-amber-200 text-xs py-2 px-4 sm:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <span className="bg-[#990000] text-white px-2.5 py-0.5 rounded font-bold text-[11px] shrink-0 uppercase tracking-wide flex items-center">
+          <span className="relative z-10 bg-[#990000] text-white px-2.5 py-0.5 rounded font-bold text-[11px] shrink-0 uppercase tracking-wide flex items-center shadow-sm">
             <Bell size={12} className="mr-1" /> {t.urgent_notice_label}
           </span>
-          <div className="overflow-hidden whitespace-nowrap text-slate-700 font-medium">
-            <p className="inline-block animate-marquee">
+          <div className="overflow-hidden whitespace-nowrap text-slate-700 font-medium flex-1 relative">
+            <p className="animate-marquee cursor-pointer hover:text-[#990000] transition-colors">
               {t.notice_text}
             </p>
           </div>
@@ -811,10 +948,15 @@ const Home = () => {
                 {t.rules_heading}
               </h2>
             </div>
-            <Link to="/login" className="text-xs font-bold text-[#003893] hover:underline flex items-center">
+            <button 
+              type="button"
+              onClick={() => setCatalogModalOpen(true)} 
+              className="text-xs font-bold text-[#003893] hover:text-[#001b5d] hover:underline flex items-center bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 transition-all cursor-pointer shadow-sm"
+            >
+              <BookOpen size={14} className="mr-1.5 text-[#003893]" />
               <span>{t.rules_view_all}</span>
-              <ChevronRight size={16} />
-            </Link>
+              <ChevronRight size={16} className="ml-0.5" />
+            </button>
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
@@ -841,9 +983,14 @@ const Home = () => {
                     <td className="px-5 py-3.5 font-bold text-[#990000] font-mono">{rule.fine}</td>
                     <td className="px-5 py-3.5 font-semibold text-slate-700">{rule.demerit}</td>
                     <td className="px-5 py-3.5 text-right">
-                      <Link to="/login" className="text-xs font-bold text-[#003893] hover:underline">
-                        {t.action_check}
-                      </Link>
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedRuleCitation(rule)}
+                        className="inline-flex items-center space-x-1 px-3 py-1 bg-blue-50 hover:bg-[#003893] text-[#003893] hover:text-white border border-blue-200 hover:border-[#003893] rounded font-bold text-xs transition-all cursor-pointer shadow-sm"
+                      >
+                        <Eye size={12} className="mr-1" />
+                        <span>{t.action_check}</span>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -1024,6 +1171,321 @@ const Home = () => {
 
         </div>
       </footer>
+
+      {/* ========================================================================= */}
+      {/* 11. MODAL: FULL OFFICIAL LEGAL CATALOG (सम्पूर्ण कानुनी अनुसूची) */}
+      {/* ========================================================================= */}
+      {catalogModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col border-2 border-slate-300 shadow-2xl overflow-hidden my-auto">
+            
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#990000] to-[#770000] text-white p-5 flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                  <Scale size={22} className="text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white leading-snug">
+                    {t.modal_catalog_title}
+                  </h3>
+                  <p className="text-xs text-slate-200 mt-0.5">
+                    {t.modal_catalog_sub}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setCatalogModalOpen(false)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Close"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                
+                {/* Search Box */}
+                <div className="relative w-full sm:w-80">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text"
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                    placeholder={t.search_rule_placeholder}
+                    className="w-full pl-9 pr-8 py-2 bg-white border border-slate-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#003893]"
+                  />
+                  {catalogSearch && (
+                    <button 
+                      onClick={() => setCatalogSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Filter Pills */}
+                <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
+                  {[
+                    { key: 'ALL', label: t.filter_all },
+                    { key: 'SIGNALS', label: t.filter_signals },
+                    { key: 'SAFETY', label: t.filter_safety },
+                    { key: 'LANE', label: t.filter_lane },
+                    { key: 'SPEED', label: t.filter_speed },
+                    { key: 'PARKING', label: t.filter_parking },
+                  ].map((filter) => (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() => setCatalogFilter(filter.key)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                        catalogFilter === filter.key
+                          ? 'bg-[#003893] text-white shadow-sm'
+                          : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+
+              </div>
+            </div>
+
+            {/* Rules Cards / Grid List */}
+            <div className="p-4 sm:p-6 overflow-y-auto divide-y divide-slate-100 space-y-4">
+              {trafficRules
+                .filter(rule => {
+                  const matchFilter = catalogFilter === 'ALL' || 
+                    (catalogFilter === 'PARKING' ? (rule.category === 'PARKING' || rule.category === 'DOCS') : rule.category === catalogFilter);
+                  const q = catalogSearch.toLowerCase().trim();
+                  const matchQuery = !q || 
+                    rule.code.toLowerCase().includes(q) ||
+                    rule.title.toLowerCase().includes(q) ||
+                    rule.desc.toLowerCase().includes(q) ||
+                    rule.section.toLowerCase().includes(q);
+                  return matchFilter && matchQuery;
+                })
+                .map((rule, idx) => (
+                  <div key={idx} className="pt-4 first:pt-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50 p-3 rounded-xl transition-colors border border-transparent hover:border-slate-200">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-0.5 bg-blue-100 text-[#003893] font-mono font-bold text-xs rounded border border-blue-200">
+                          {rule.code}
+                        </span>
+                        <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                          {rule.category_label}
+                        </span>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                          rule.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                          rule.severity === 'HIGH' ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {rule.severity}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm sm:text-base">
+                        {rule.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        {rule.desc}
+                      </p>
+                      <p className="text-xs font-medium text-slate-600 flex items-center space-x-1 pt-1">
+                        <span className="text-[#990000] font-semibold">{t.col_section}:</span>
+                        <span>{rule.fullSection || rule.section}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
+                      <div className="text-left sm:text-right">
+                        <div className="text-sm font-mono font-extrabold text-[#990000]">
+                          {rule.fine}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {rule.demerit}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedRuleCitation(rule);
+                        }}
+                        className="px-3 py-1.5 bg-[#003893] hover:bg-[#001b5d] text-white rounded-lg text-xs font-bold transition-colors flex items-center space-x-1 shadow-sm"
+                      >
+                        <Eye size={13} className="mr-1" />
+                        <span>{t.action_check}</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-100 border-t border-slate-200 p-4 flex justify-between items-center text-xs text-slate-500">
+              <span className="hidden sm:inline">
+                {lang === 'np' ? 'सवारी तथा यातायात व्यवस्था ऐन, २०४९ अनुसार' : 'Statutory provisions per Motor Vehicles & Transport Act 2049'}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setCatalogModalOpen(false)}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold text-xs transition-colors ml-auto"
+              >
+                {t.close_modal}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 12. MODAL: RULE CITATION & DRIVER AWARENESS (कानुनी व्याख्या तथा सचेतना) */}
+      {/* ========================================================================= */}
+      {selectedRuleCitation && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-2xl w-full border-2 border-slate-300 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#003893] to-[#001b5d] text-white p-5 flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shrink-0">
+                  <Shield size={24} className="text-amber-300" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="px-2 py-0.5 bg-amber-400 text-slate-900 font-mono font-bold text-xs rounded">
+                      {selectedRuleCitation.code}
+                    </span>
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                      selectedRuleCitation.severity === 'CRITICAL' ? 'bg-red-500 text-white' :
+                      selectedRuleCitation.severity === 'HIGH' ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-800'
+                    }`}>
+                      {selectedRuleCitation.severity} RISK
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white leading-tight">
+                    {selectedRuleCitation.title}
+                  </h3>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setSelectedRuleCitation(null)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Close"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Modal Body with Rich Citations & Public Awareness */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-slate-700 text-xs sm:text-sm leading-relaxed">
+              
+              {/* Key Statutory Metrics Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-center">
+                  <span className="text-[11px] text-slate-500 block">{t.col_section}</span>
+                  <span className="font-bold text-[#003893] text-xs sm:text-sm mt-0.5 block">{selectedRuleCitation.section}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-center">
+                  <span className="text-[11px] text-slate-500 block">{t.col_fine}</span>
+                  <span className="font-bold font-mono text-[#990000] text-xs sm:text-sm mt-0.5 block">{selectedRuleCitation.fine}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-center">
+                  <span className="text-[11px] text-slate-500 block">{t.col_demerit}</span>
+                  <span className="font-bold text-amber-800 text-xs sm:text-sm mt-0.5 block">{selectedRuleCitation.demerit}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-center">
+                  <span className="text-[11px] text-slate-500 block">{lang === 'np' ? 'प्रणाली स्थिति' : 'Detection'}</span>
+                  <span className="font-bold text-purple-800 text-xs sm:text-sm mt-0.5 block">24/7 AI Radar</span>
+                </div>
+              </div>
+
+              {/* Section 1: Statutory Legal Provision */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                <div className="flex items-center space-x-2 text-[#990000] font-bold text-xs uppercase tracking-wide">
+                  <Scale size={15} />
+                  <span>{t.statutory_law}</span>
+                </div>
+                <p className="font-medium text-slate-800">
+                  {selectedRuleCitation.fullSection || selectedRuleCitation.section}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {selectedRuleCitation.desc}
+                </p>
+              </div>
+
+              {/* Section 2: Automated AI Camera Detection Protocol */}
+              <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-1.5">
+                <div className="flex items-center space-x-2 text-[#003893] font-bold text-xs uppercase tracking-wide">
+                  <Camera size={15} />
+                  <span>{t.ai_surveillance}</span>
+                </div>
+                <p className="text-slate-700">
+                  {selectedRuleCitation.aiDetection}
+                </p>
+              </div>
+
+              {/* Section 3: Public Road Safety Awareness Rationale */}
+              <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 space-y-1.5">
+                <div className="flex items-center space-x-2 text-amber-800 font-bold text-xs uppercase tracking-wide">
+                  <AlertTriangle size={15} />
+                  <span>{t.public_awareness}</span>
+                </div>
+                <p className="text-slate-700">
+                  {selectedRuleCitation.awareness}
+                </p>
+              </div>
+
+              {/* Section 4: Driver Compliance Guidelines (Do's & Don'ts) */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2 text-slate-800 font-bold text-xs uppercase tracking-wide">
+                  <CheckCircle2 size={15} className="text-emerald-600" />
+                  <span>{t.driver_dos}</span>
+                </div>
+                <div className="space-y-1.5 pl-1">
+                  {selectedRuleCitation.guidelines?.map((item, gIdx) => (
+                    <div key={gIdx} className="flex items-start space-x-2 text-xs text-slate-600">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Actions */}
+            <div className="bg-slate-100 border-t border-slate-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRuleCitation(null);
+                  setCatalogModalOpen(false);
+                  const searchEl = document.getElementById('search');
+                  if (searchEl) searchEl.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full sm:w-auto px-4 py-2 bg-[#003893] hover:bg-[#001b5d] text-white rounded-lg font-bold text-xs transition-colors flex items-center justify-center space-x-1 shadow-sm"
+              >
+                <Search size={14} className="mr-1.5" />
+                <span>{t.check_my_vehicle}</span>
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => setSelectedRuleCitation(null)}
+                className="w-full sm:w-auto px-5 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-bold text-xs transition-colors"
+              >
+                {t.close_modal}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

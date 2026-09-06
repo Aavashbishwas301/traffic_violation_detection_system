@@ -8,6 +8,7 @@ import VehicleOwner from "../models/VehicleOwner.js";
 import Rule from "../models/Rule.js";
 import Evidence from "../models/Evidence.js";
 import Settlement from "../models/Settlement.js";
+import Notification from "../models/Notification.js";
 import { violationQueue, processViolationJob } from "../jobs/violationQueue.js";
 import storageService from "../services/storageService.js";
 
@@ -127,6 +128,19 @@ const manualViolation = async (req, res) => {
       paymentMethod: "N/A",
       paymentStatus: "Pending",
     });
+
+    if (vehicle.ownerId) {
+      try {
+        await Notification.create({
+          receiverType: "VehicleOwner",
+          receiverId: vehicle.ownerId,
+          title: "New Traffic Violation Recorded",
+          message: `A traffic violation citation has been recorded for your vehicle ${vehicle.vehicleNumber} (${vType?.violationName || violationType}). Fine: Rs. ${fineAmount}.`,
+        });
+      } catch (notifErr) {
+        console.warn("Could not create owner notification:", notifErr.message);
+      }
+    }
 
     res.status(201).json(violation);
   } catch (error) {
@@ -304,6 +318,19 @@ const updateViolation = async (req, res) => {
             paymentMethod: "N/A",
             paymentStatus: "Pending",
           });
+        }
+
+        if (violation.vehicleId && violation.vehicleId.ownerId) {
+          try {
+            await Notification.create({
+              receiverType: "VehicleOwner",
+              receiverId: violation.vehicleId.ownerId,
+              title: "Traffic Violation Citation Verified",
+              message: `Your violation citation for vehicle ${violation.vehicleId.vehicleNumber} (${violation.violationTypeId?.violationName || "Traffic Rule Violation"}) has been verified by Traffic Police. Please inspect and settle fine.`,
+            });
+          } catch (notifErr) {
+            console.warn("Could not create owner notification:", notifErr.message);
+          }
         }
       }
 

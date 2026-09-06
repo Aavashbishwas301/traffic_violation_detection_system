@@ -101,6 +101,9 @@ const seedData = async () => {
       designationId: inspectorDesig._id,
       station: 'Metropolitan Traffic Police Division, Baggikhana',
       status: 'Active',
+      verificationStatus: 'Verified',
+      verificationDocument: '/uploads/police_badge_sample.png',
+      verifiedAt: new Date(),
       gender: 'Male',
       dateOfBirth: new Date('1985-05-15'),
       address: 'Kathmandu, Nepal',
@@ -116,6 +119,9 @@ const seedData = async () => {
       designationId: dspDesig._id,
       station: 'Central Traffic Command & Control Center',
       status: 'Active',
+      verificationStatus: 'Verified',
+      verificationDocument: '/uploads/police_badge_sample.png',
+      verifiedAt: new Date(),
       gender: 'Male',
       dateOfBirth: new Date('1978-11-20'),
       address: 'Lalitpur, Nepal',
@@ -131,6 +137,8 @@ const seedData = async () => {
       designationId: siDesig._id,
       station: 'Maitighar Traffic Control Sector',
       status: 'Active',
+      verificationStatus: 'Verified',
+      verifiedAt: new Date(),
       gender: 'Female',
       dateOfBirth: new Date('1992-03-10'),
       address: 'Baneshwor, Kathmandu',
@@ -146,6 +154,8 @@ const seedData = async () => {
       designationId: asiDesig._id,
       station: 'Koteshwor Traffic Post',
       status: 'Active',
+      verificationStatus: 'Verified',
+      verifiedAt: new Date(),
       gender: 'Male',
       dateOfBirth: new Date('1994-07-25'),
       address: 'Bhaktapur, Nepal',
@@ -161,6 +171,8 @@ const seedData = async () => {
       designationId: hcDesig._id,
       station: 'Kalanki Traffic Sector',
       status: 'Active',
+      verificationStatus: 'Pending',
+      verificationDocument: '/uploads/police_badge_sample.png',
       gender: 'Male',
       dateOfBirth: new Date('1996-09-18'),
       address: 'Kalanki, Kathmandu',
@@ -175,6 +187,9 @@ const seedData = async () => {
       phoneNumber: '9812000002',
       address: 'Koteshwor, Kathmandu',
       citizenshipNumber: '27-01-72-12345',
+      verificationStatus: 'Verified',
+      verificationDocument: '/uploads/citizenship_sample.png',
+      verifiedAt: new Date(),
       gender: 'Male',
       dateOfBirth: new Date('1990-02-20'),
     });
@@ -186,6 +201,8 @@ const seedData = async () => {
       phoneNumber: '9812000003',
       address: 'Lalitpur, Nepal',
       citizenshipNumber: '28-01-74-67890',
+      verificationStatus: 'Pending',
+      verificationDocument: '/uploads/citizenship_sample.png',
       gender: 'Female',
       dateOfBirth: new Date('1995-08-10'),
     });
@@ -294,12 +311,26 @@ const seedData = async () => {
         remarks: 'Paid on time'
     });
 
-    // 12. Create Notification
+    // 12. Create Notifications
     await Notification.create({
         receiverType: 'VehicleOwner',
         receiverId: owner1._id,
         title: 'New Traffic Violation Recorded',
         message: 'A violation of type "No Helmet" has been recorded for your vehicle BA 2 PA 1234.'
+    });
+
+    await Notification.create({
+        receiverType: 'TrafficPolice',
+        receiverId: police._id,
+        title: 'Duty Station Assignment',
+        message: 'Reporting station: Metropolitan Traffic Police Division, Baggikhana. Active shift assigned.'
+    });
+
+    await Notification.create({
+        receiverType: 'TrafficPolice',
+        receiverId: police._id,
+        title: 'AI Verification Desk Alert',
+        message: 'Automated AI camera at Kalanki Intersection flagged a potential zebra crossing violation. Pending officer review.'
     });
 
     console.log('Database Seeded Successfully!');

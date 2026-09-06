@@ -41,6 +41,26 @@ const vehicleOwnerSchema = new mongoose.Schema(
       enum: ["Active", "Inactive", "Suspended"],
       default: "Active",
     },
+    verificationStatus: {
+      type: String,
+      enum: ["Pending", "Verified", "Rejected"],
+      default: "Pending",
+    },
+    verificationDocument: {
+      type: String,
+      default: "",
+    },
+    verificationRemarks: {
+      type: String,
+      default: "",
+    },
+    verifiedAt: {
+      type: Date,
+    },
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+    },
     resetPasswordToken: {
       type: String,
     },

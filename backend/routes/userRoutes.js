@@ -4,8 +4,10 @@ import {
   registerUser,
   getUserProfile,
   updateUserProfile,
+  uploadVerificationDocument,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js";
 import {
   loginValidation,
   registerValidation,
@@ -26,13 +28,20 @@ router
   .route("/profile")
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
+
+router.post("/upload-document", protect, upload.single("document"), uploadVerificationDocument);
   
 router.get("/verify", protect, (req, res) => {
   res.status(200).json({ 
     valid: true, 
     user: {
       ...req.user.toObject(),
-      role: req.user.role
+      role: req.user.role,
+      verificationStatus: req.user.role === 'Admin' ? 'Verified' : (req.user.verificationStatus || 'Pending'),
+      verificationDocument: req.user.verificationDocument || '',
+      verificationRemarks: req.user.verificationRemarks || '',
+      verifiedAt: req.user.verifiedAt,
+      verifiedBy: req.user.verifiedBy
     } 
   });
 });
